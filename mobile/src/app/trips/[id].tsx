@@ -25,12 +25,19 @@ export default function TripDetailScreen() {
     isLoading: tripLoading,
     refetch: refetchTrip,
   } = useSupabaseQuery(
+    () => supabase.from('trips').select('*, lines(name, mode)').eq('id', id).single(),
+    [id],
+  );
+
+  // Server-side ETAs: the trip_stop_times view owns the arrival math
+  // (offset + delay, NULL expected_arrival when cancelled).
+  const { data: stopTimes, refetch: refetchStopTimes } = useSupabaseQuery(
     () =>
       supabase
-        .from('trips')
-        .select('*, lines(name, mode, line_stops(id, sequence_order, arrival_offset_minutes, stops(name)))')
-        .eq('id', id)
-        .single(),
+        .from('trip_stop_times')
+        .select('*')
+        .eq('trip_id', id)
+        .order('sequence_order'),
     [id],
   );
 
@@ -57,7 +64,10 @@ export default function TripDetailScreen() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'trips', filter: `id=eq.${id}` },
-        () => refetchTrip(),
+        () => {
+          refetchTrip();
+          refetchStopTimes(); // delay changes shift every ETA
+        },
       )
       .on(
         'postgres_changes',
@@ -69,13 +79,8 @@ export default function TripDetailScreen() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id, refetchTrip, refetchHistory]);
+  }, [id, refetchTrip, refetchStopTimes, refetchHistory]);
 
-  const stops = [...(trip?.lines?.line_stops ?? [])].sort(
-    (a, b) => a.sequence_order - b.sequence_order,
-  );
-  const departure = trip ? new Date(trip.scheduled_departure) : null;
-  const delayMs = trip?.status === 'delayed' ? trip.delay_minutes * 60_000 : 0;
   const cancelled = trip?.status === 'cancelled';
 
   return (
@@ -85,7 +90,7 @@ export default function TripDetailScreen() {
       {tripLoading && <ActivityIndicator style={styles.spinner} />}
       {tripError && <Text style={styles.error}>Trip failed to load: {tripError}</Text>}
 
-      {trip && departure && (
+      {trip && (
         <FlatList
           data={history ?? []}
           keyExtractor={(update) => update.id}
@@ -101,21 +106,21 @@ export default function TripDetailScreen() {
 
               <Text style={styles.sectionTitle}>Stops</Text>
               <View style={styles.card}>
-                {stops.map((ls, index) => {
-                  const eta = new Date(
-                    departure.getTime() + ls.arrival_offset_minutes * 60_000 + delayMs,
-                  );
+                {(stopTimes ?? []).map((st, index) => {
+                  // Cancelled trips have no expected arrival; show the
+                  // scheduled time (struck through via cancelledText).
+                  const etaIso = st.expected_arrival ?? st.scheduled_arrival;
                   return (
-                    <View key={ls.id} style={styles.stopRow}>
+                    <View key={st.line_stop_id ?? index} style={styles.stopRow}>
                       <View style={styles.stopMarkerColumn}>
                         <View style={[styles.stopDot, cancelled && styles.stopDotCancelled]} />
-                        {index < stops.length - 1 && <View style={styles.stopLine} />}
+                        {index < (stopTimes?.length ?? 0) - 1 && <View style={styles.stopLine} />}
                       </View>
                       <Text style={[styles.stopName, cancelled && styles.cancelledText]}>
-                        {ls.stops?.name ?? 'Unknown stop'}
+                        {st.stop_name ?? 'Unknown stop'}
                       </Text>
                       <Text style={[styles.stopEta, cancelled && styles.cancelledText]}>
-                        {formatTime(eta)}
+                        {etaIso ? formatTime(new Date(etaIso)) : '—'}
                       </Text>
                     </View>
                   );

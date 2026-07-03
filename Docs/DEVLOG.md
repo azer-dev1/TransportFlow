@@ -176,12 +176,34 @@ favorites rows** until now — rider-demo's Central Station favorite + fake devi
 token were re-created there as durable demo fixtures (matching the old local
 stack).
 
+## Phase 8 — Server-side ETAs + free-tier keep-alive (2026-07-03)
+
+- **`trip_stop_times` view** (migration `…08`): one row per (trip, stop) with
+  `scheduled_arrival` and `expected_arrival` (offset + delay; NULL when
+  cancelled) computed in SQL. `security_invoker = true` so the underlying
+  tables' RLS still applies through the view; SELECT granted to authenticated
+  only (same exposure as `trips`). The trip detail screen now renders these
+  rows instead of doing `departure + offset + delay` math in JS — delay math
+  lives in exactly one place.
+- **Keep-alive** (`.github/workflows/supabase-keepalive.yml`): the free tier
+  pauses projects after ~1 week idle; the action curls one REST query
+  (Mon + Thu, 06:17 UTC) using the `SUPABASE_ANON_KEY` repo secret (already
+  set on `azer-dev1/TransportFlow` — it's the publishable anon key, not
+  service_role). Scheduled workflows run from the default branch, so it
+  activates when this branch merges to master; until then it can be run
+  manually via workflow_dispatch.
+
 ## Where things stand / what's next
 
 - PR #1 (`feat/notification-webhook`) and PR #2 (`feat/mobile-auth`, stacked on #1)
   are open — merge #1 first, then #2.
 - **FCM V1 credentials** (`eas credentials`) are still needed before Android push
   notifications actually deliver to the phone.
+- **GTFS import** — replace the hand-made demo network with a real city's GTFS
+  feed (lines/stops/patterns in one import script). Big enough to be its own
+  session.
+- App screens for the Phase 7 backend: search UI, nearby/map view, alerts on
+  line detail, mute + quiet-hours settings, and a notifications/unread screen.
 - Later: shareable `preview` APK builds, then Play Store via the `production` profile.
 
 ## Gotchas worth remembering

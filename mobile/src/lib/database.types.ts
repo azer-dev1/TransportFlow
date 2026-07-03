@@ -230,6 +230,13 @@ export type Database = {
             foreignKeyName: "notifications_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
+            referencedRelation: "trip_stop_times"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "notifications_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
             referencedRelation: "trips"
             referencedColumns: ["id"]
           },
@@ -410,6 +417,13 @@ export type Database = {
             foreignKeyName: "trip_updates_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
+            referencedRelation: "trip_stop_times"
+            referencedColumns: ["trip_id"]
+          },
+          {
+            foreignKeyName: "trip_updates_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
             referencedRelation: "trips"
             referencedColumns: ["id"]
           },
@@ -462,7 +476,37 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      trip_stop_times: {
+        Row: {
+          delay_minutes: number | null
+          expected_arrival: string | null
+          line_id: string | null
+          line_stop_id: string | null
+          scheduled_arrival: string | null
+          scheduled_departure: string | null
+          sequence_order: number | null
+          status: string | null
+          stop_id: string | null
+          stop_name: string | null
+          trip_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "line_stops_stop_id_fkey"
+            columns: ["stop_id"]
+            isOneToOne: false
+            referencedRelation: "stops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_line_id_fkey"
+            columns: ["line_id"]
+            isOneToOne: false
+            referencedRelation: "lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       complete_finished_trips: { Args: never; Returns: number }
