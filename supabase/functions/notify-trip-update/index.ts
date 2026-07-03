@@ -41,19 +41,27 @@ function buildMessage(line: string, status: string, delay: number): string {
   }
 }
 
+interface ExpoPushTicket {
+  status: "ok" | "error";
+  id?: string;
+  message?: string;
+  details?: { error?: string };
+}
+
 async function sendExpoPush(
   tokens: string[],
   title: string,
   body: string,
   tripId: string,
-): Promise<number> {
+): Promise<{ sent: number; staleTokens: string[] }> {
   // Expo tokens look like ExponentPushToken[xxxxxxxx]; skip anything else.
   const messages = tokens
     .filter((t) => typeof t === "string" && t.startsWith("ExponentPushToken"))
     .map((to) => ({ to, sound: "default", title, body, data: { trip_id: tripId } }));
-  if (messages.length === 0) return 0;
+  if (messages.length === 0) return { sent: 0, staleTokens: [] };
 
   let sent = 0;
+  const staleTokens: string[] = [];
   // Expo accepts up to 100 messages per request.
   for (let i = 0; i < messages.length; i += 100) {
     const batch = messages.slice(i, i + 100);
@@ -64,7 +72,22 @@ async function sendExpoPush(
         body: JSON.stringify(batch),
       });
       if (res.ok) {
-        sent += batch.length;
+        // Tickets come back in the same order as the batch. A
+        // DeviceNotRegistered ticket means the token is permanently dead
+        // (app uninstalled / token rotated) and Expo requires we stop
+        // sending to it — collect it for deletion. (It can also surface
+        // later in receipts, which we don't poll; the *next* fan-out's
+        // ticket catches those, so dead tokens still get pruned.)
+        const { data: tickets } = await res.json() as { data?: ExpoPushTicket[] };
+        (tickets ?? []).forEach((ticket, idx) => {
+          if (ticket.status === "ok") {
+            sent += 1;
+          } else if (ticket.details?.error === "DeviceNotRegistered") {
+            staleTokens.push(batch[idx].to);
+          } else {
+            console.error("Expo push ticket error", ticket.message, ticket.details);
+          }
+        });
       } else {
         console.error("Expo push HTTP", res.status, await res.text());
       }
@@ -74,7 +97,7 @@ async function sendExpoPush(
       console.error("Expo push error", err);
     }
   }
-  return sent;
+  return { sent, staleTokens };
 }
 
 Deno.serve(async (req) => {
@@ -142,13 +165,32 @@ Deno.serve(async (req) => {
       .select("expo_push_token")
       .in("user_id", userIds);
     const tokens = [...new Set((devices ?? []).map((d) => d.expo_push_token))];
-    const pushSent = await sendExpoPush(tokens, lineName, message, record.trip_id);
+    const { sent: pushSent, staleTokens } = await sendExpoPush(
+      tokens,
+      lineName,
+      message,
+      record.trip_id,
+    );
+
+    // Prune devices Expo reported as DeviceNotRegistered (app uninstalled)
+    // so future fan-outs stop sending into the void. Needs the service_role
+    // DELETE grant from migration 6.
+    if (staleTokens.length > 0) {
+      const { error: pruneErr } = await supabase
+        .from("devices")
+        .delete()
+        .in("expo_push_token", staleTokens);
+      if (pruneErr) {
+        console.error("stale device prune failed", pruneErr.message);
+      }
+    }
 
     return json({
       recipients: userIds.length,
       notifications: rows.length,
       devices: tokens.length,
       push_sent: pushSent,
+      stale_devices_pruned: staleTokens.length,
     });
   } catch (err) {
     console.error("notify-trip-update fatal", err);

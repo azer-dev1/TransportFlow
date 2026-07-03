@@ -117,6 +117,32 @@ both cron jobs verified running (`cron.job_run_details`). One cleanup: the old
 seed wrote UTC wall times, patterns write Tunis local — 22 leftover off-by-1h
 "phantom" future trips were deleted (any trip with staff reports was kept).
 
+## Phase 6 — Loose-end hardening (2026-07-03)
+
+Migration `…06_notifications_and_hardening.sql` + an Edge Function update, closing
+four gaps in what was already built:
+
+- **Notification read state + retention**: `notifications.read_at` (NULL = unread),
+  an owner-only UPDATE policy column-locked to `read_at` (same pattern as
+  `profiles.full_name`), a partial index for unread-count queries, and a
+  `purge-old-notifications` cron (03:45 UTC daily, deletes rows older than 30
+  days). The app can now show "3 unread" once a notifications screen exists.
+- **Dead push tokens get pruned**: `notify-trip-update` now reads Expo's push
+  tickets and deletes `devices` rows whose token comes back
+  `DeviceNotRegistered` (app uninstalled), instead of ignoring the response.
+  Needed a `service_role` DELETE grant on `devices`.
+- **Duplicate-report guard**: a BEFORE INSERT trigger on `trip_updates` rejects an
+  identical (status, delay) report on the same trip within 5 minutes — each
+  insert fans out a webhook + pushes, so repeats are pure spam. Corrections
+  (different status or delay) always go through.
+- **Admin role + `promote_to_staff(user_id)` RPC**: `profiles.role` now allows
+  `admin`; the SECURITY DEFINER RPC is the only client-reachable path that
+  writes `role` and refuses non-admin callers. Admins can also report trip
+  status. Bootstrapping the first admin is still a manual SQL step.
+
+All verified live on hosted with rolled-back transactional tests (duplicate
+blocked, correction allowed, promotion gated, no rows leaked).
+
 ## Where things stand / what's next
 
 - PR #1 (`feat/notification-webhook`) and PR #2 (`feat/mobile-auth`, stacked on #1)

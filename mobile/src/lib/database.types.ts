@@ -172,6 +172,7 @@ export type Database = {
         Row: {
           id: string
           message: string
+          read_at: string | null
           sent_at: string
           trip_id: string | null
           user_id: string
@@ -179,6 +180,7 @@ export type Database = {
         Insert: {
           id?: string
           message: string
+          read_at?: string | null
           sent_at?: string
           trip_id?: string | null
           user_id: string
@@ -186,6 +188,7 @@ export type Database = {
         Update: {
           id?: string
           message?: string
+          read_at?: string | null
           sent_at?: string
           trip_id?: string | null
           user_id?: string
@@ -381,6 +384,7 @@ export type Database = {
     Functions: {
       complete_finished_trips: { Args: never; Returns: number }
       materialize_trips: { Args: { days_ahead?: number }; Returns: number }
+      promote_to_staff: { Args: { target_user_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
