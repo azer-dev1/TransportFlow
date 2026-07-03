@@ -196,7 +196,7 @@ stack).
 ## Where things stand / what's next
 
 - PR #1 (`feat/notification-webhook`) and PR #2 (`feat/mobile-auth`, stacked on #1)
-  are open — merge #1 first, then #2.
+  merged to master 2026-07-03 — everything above is on master.
 - **FCM V1 credentials** (`eas credentials`) are still needed before Android push
   notifications actually deliver to the phone.
 - **GTFS import** — replace the hand-made demo network with a real city's GTFS
