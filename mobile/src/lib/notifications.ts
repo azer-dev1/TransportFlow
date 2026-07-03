@@ -7,15 +7,22 @@ import { Platform } from 'react-native';
 
 import { supabase } from './supabase';
 
-// Show pushes as banners even while the app is foregrounded.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+// Expo Go has no remote-push support (removed on Android in SDK 53+), and
+// initializing expo-notifications there can crash outright — leave the
+// module completely untouched unless we're in a real build.
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
+
+if (!isExpoGo) {
+  // Show pushes as banners even while the app is foregrounded.
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 /**
  * Ask for permission, fetch the Expo push token, and register it in
@@ -73,7 +80,7 @@ async function registerPushToken(userId: string): Promise<void> {
  */
 export function usePushNotifications(userId: string | undefined) {
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || isExpoGo) return;
 
     registerPushToken(userId);
 
