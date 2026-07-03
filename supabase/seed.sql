@@ -103,3 +103,30 @@ where exists (select 1 from auth.users where email = 'staff-demo@transportflow.a
 -- advance. Seed those from the app itself after a demo rider signs up, or
 -- extend this script once a fixed demo-rider account is chosen the same
 -- way as the staff account above.
+
+-- =========================================================
+-- LOCAL DEV ONLY: wire the trip_updates -> Edge Function webhook.
+--
+-- notify_trip_update_webhook() (migration 3) reads these two Vault secrets;
+-- until they exist the trigger is a no-op. Values below are the LOCAL stack's
+-- functions URL and the PUBLIC local demo service_role key — identical in every
+-- `supabase start`, published in Supabase's docs, NOT a real secret. Idempotent.
+--
+-- In a hosted environment DO NOT use these values: instead store the project's
+-- functions URL and its real service_role key under the same two secret names,
+-- e.g. select vault.create_secret('https://<ref>.supabase.co/functions/v1/notify-trip-update', 'edge_url');
+-- =========================================================
+do $$
+declare
+  v_url text := 'http://host.docker.internal:54321/functions/v1/notify-trip-update';
+  v_key text := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+  v_id  uuid;
+begin
+  select id into v_id from vault.secrets where name = 'edge_url';
+  if v_id is null then perform vault.create_secret(v_url, 'edge_url');
+  else perform vault.update_secret(v_id, v_url, 'edge_url'); end if;
+
+  select id into v_id from vault.secrets where name = 'edge_service_role_key';
+  if v_id is null then perform vault.create_secret(v_key, 'edge_service_role_key');
+  else perform vault.update_secret(v_id, v_key, 'edge_service_role_key'); end if;
+end $$;
