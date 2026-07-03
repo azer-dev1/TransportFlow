@@ -2,7 +2,9 @@ import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { StatusBadge } from '@/components/StatusBadge';
+import { Star } from '@/components/Star';
 import { supabase } from '@/lib/supabase';
+import { useFavorites } from '@/lib/use-favorites';
 import { useSupabaseQuery } from '@/lib/use-supabase-query';
 
 function departureDayLabel(iso: string): string {
@@ -21,6 +23,7 @@ function departureTime(iso: string): string {
 
 export default function LineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { isLineFavorite, isStopFavorite, toggleLine, toggleStop, mutationError } = useFavorites();
 
   const { data: line } = useSupabaseQuery(
     () => supabase.from('lines').select('*').eq('id', id).single(),
@@ -31,7 +34,7 @@ export default function LineDetailScreen() {
     () =>
       supabase
         .from('line_stops')
-        .select('id, sequence_order, arrival_offset_minutes, stops(name)')
+        .select('id, sequence_order, arrival_offset_minutes, stops(id, name)')
         .eq('line_id', id)
         .order('sequence_order'),
     [id],
@@ -55,7 +58,12 @@ export default function LineDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: line?.name ?? 'Line' }} />
+      <Stack.Screen
+        options={{
+          title: line?.name ?? 'Line',
+          headerRight: () => <Star active={isLineFavorite(id)} onPress={() => toggleLine(id)} />,
+        }}
+      />
 
       <FlatList
         data={trips ?? []}
@@ -65,6 +73,7 @@ export default function LineDetailScreen() {
           <View style={styles.header}>
             <Text style={styles.sectionTitle}>Stops</Text>
             {stopsError && <Text style={styles.error}>Stops failed to load: {stopsError}</Text>}
+            {mutationError && <Text style={styles.error}>Favorite change failed: {mutationError}</Text>}
             <View style={styles.card}>
               {(lineStops ?? []).map((ls, index) => (
                 <View key={ls.id} style={styles.stopRow}>
@@ -76,6 +85,13 @@ export default function LineDetailScreen() {
                   <Text style={styles.stopOffset}>
                     {ls.arrival_offset_minutes === 0 ? 'Departure' : `+${ls.arrival_offset_minutes} min`}
                   </Text>
+                  {ls.stops && (
+                    <Star
+                      size={18}
+                      active={isStopFavorite(ls.stops.id)}
+                      onPress={() => toggleStop(ls.stops!.id)}
+                    />
+                  )}
                 </View>
               ))}
             </View>

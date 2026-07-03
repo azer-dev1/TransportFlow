@@ -19,9 +19,14 @@ export default function LinesScreen() {
         options={{
           title: 'Lines',
           headerRight: () => (
-            <Link href="/profile" style={styles.headerLink}>
-              Profile
-            </Link>
+            <View style={styles.headerLinks}>
+              <Link href="/favorites" style={styles.headerLink}>
+                ★
+              </Link>
+              <Link href="/profile" style={styles.headerLink}>
+                Profile
+              </Link>
+            </View>
           ),
         }}
       />
@@ -57,6 +62,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
+  },
+  headerLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
   headerLink: {
     color: '#175cd3',
