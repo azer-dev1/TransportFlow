@@ -143,6 +143,39 @@ four gaps in what was already built:
 All verified live on hosted with rolled-back transactional tests (duplicate
 blocked, correction allowed, promotion gated, no rows leaked).
 
+## Phase 7 — Search, nearby stops, service alerts, notification prefs (2026-07-03)
+
+Migration `…07_search_nearby_alerts_prefs.sql` + an Edge Function extension — four
+new capabilities, all pure Postgres:
+
+- **Typo-tolerant search**: `pg_trgm` GIN indexes on stop/line names +
+  `search_stops(query)` / `search_lines(query)` RPCs (trigram + word similarity +
+  substring; "centrl station" → Central Station at rank 0.72). SECURITY INVOKER,
+  so results stay behind the caller's RLS.
+- **Nearby stops**: `cube`/`earthdistance` + a GiST `ll_to_earth` index +
+  `nearby_stops(lat, lng, radius_m)` RPC returning stops with `distance_m`,
+  bounding-box prefiltered then exact great-circle. A future map screen is a
+  render layer over this one call.
+- **Service alerts**: `service_alerts` table (line-level announcements with
+  severity + optional `ends_at`; staff/admin insert & update, everyone reads).
+  INSERT fires the same Vault-configured webhook to `notify-trip-update`, which
+  now branches on `payload.table` and reuses the favorites fan-out. Alert pushes
+  deep-link to the line screen (`data.line_id`).
+- **Notification preferences**: `favorites.muted` (a muted favorite is excluded
+  from fan-out entirely) and `notification_prefs` (per-user quiet hours in the
+  user's own timezone — during the window the notification row is still written,
+  only the push is suppressed).
+
+Verified live on hosted: search + nearby RPC results, then three real alert
+fan-outs through the webhook — normal (1 recipient, 1 notification, and the
+demo's fake push token correctly pruned as `DeviceNotRegistered` — the Phase 6
+prune path confirmed against Expo's real API), quiet-hours (row written,
+`quiet_skipped: 1`, no push), and muted (`recipients: 0`). Test alerts,
+notifications, and prefs were cleaned up afterwards. Note: hosted had **no
+favorites rows** until now — rider-demo's Central Station favorite + fake device
+token were re-created there as durable demo fixtures (matching the old local
+stack).
+
 ## Where things stand / what's next
 
 - PR #1 (`feat/notification-webhook`) and PR #2 (`feat/mobile-auth`, stacked on #1)

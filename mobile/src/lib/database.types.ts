@@ -69,18 +69,21 @@ export type Database = {
         Row: {
           id: string
           line_id: string | null
+          muted: boolean
           stop_id: string | null
           user_id: string
         }
         Insert: {
           id?: string
           line_id?: string | null
+          muted?: boolean
           stop_id?: string | null
           user_id: string
         }
         Update: {
           id?: string
           line_id?: string | null
+          muted?: boolean
           stop_id?: string | null
           user_id?: string
         }
@@ -168,6 +171,35 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_prefs: {
+        Row: {
+          quiet_end: string | null
+          quiet_start: string | null
+          timezone: string
+          user_id: string
+        }
+        Insert: {
+          quiet_end?: string | null
+          quiet_start?: string | null
+          timezone?: string
+          user_id: string
+        }
+        Update: {
+          quiet_end?: string | null
+          quiet_start?: string | null
+          timezone?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_prefs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           id: string
@@ -230,6 +262,57 @@ export type Database = {
           role?: string
         }
         Relationships: []
+      }
+      service_alerts: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          ends_at: string | null
+          id: string
+          line_id: string
+          severity: string
+          starts_at: string
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          ends_at?: string | null
+          id?: string
+          line_id: string
+          severity?: string
+          starts_at?: string
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          ends_at?: string | null
+          id?: string
+          line_id?: string
+          severity?: string
+          starts_at?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_alerts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_alerts_line_id_fkey"
+            columns: ["line_id"]
+            isOneToOne: false
+            referencedRelation: "lines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_patterns: {
         Row: {
@@ -384,7 +467,36 @@ export type Database = {
     Functions: {
       complete_finished_trips: { Args: never; Returns: number }
       materialize_trips: { Args: { days_ahead?: number }; Returns: number }
+      nearby_stops: {
+        Args: { lat: number; lng: number; radius_m?: number }
+        Returns: {
+          distance_m: number
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+        }[]
+      }
       promote_to_staff: { Args: { target_user_id: string }; Returns: undefined }
+      search_lines: {
+        Args: { max_results?: number; query: string }
+        Returns: {
+          id: string
+          mode: string
+          name: string
+          rank: number
+        }[]
+      }
+      search_stops: {
+        Args: { max_results?: number; query: string }
+        Returns: {
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          rank: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

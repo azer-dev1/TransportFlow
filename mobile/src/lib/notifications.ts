@@ -85,8 +85,9 @@ export function usePushNotifications(userId: string | undefined) {
     registerPushToken(userId);
 
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const tripId = response.notification.request.content.data?.trip_id;
+      const { trip_id: tripId, line_id: lineId } = response.notification.request.content.data ?? {};
       if (typeof tripId === 'string') router.push(`/trips/${tripId}`);
+      else if (typeof lineId === 'string') router.push(`/lines/${lineId}`); // service alerts
     });
     return () => sub.remove();
   }, [userId]);
