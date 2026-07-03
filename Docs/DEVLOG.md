@@ -241,6 +241,26 @@ Also: staff cards now show for the `admin` role too. Verified with
 `tsc --noEmit` and live backend checks; on-phone walkthrough still pending
 (needs the dev build + `expo start`).
 
+## Phase 11 — Standalone preview builds + OTA updates (2026-07-03)
+
+Testing was chained to `npx expo start` on the dev machine's Wi-Fi. Fix:
+**EAS Update** + a **preview APK**.
+
+- `expo-updates` installed; `app.json` gained `runtimeVersion: appVersion` and
+  the EAS updates URL; `eas.json` profiles gained channels (development /
+  preview / production).
+- The preview/production profiles bake `EXPO_PUBLIC_SUPABASE_URL` / `_ANON_KEY`
+  into the build via `eas.json` `env` — standalone builds bundle JS on EAS
+  servers where the gitignored `.env` doesn't exist (the dev client never hit
+  this because `expo start` injects env locally). These are the publishable
+  values that ship in any APK; RLS remains the enforcement layer.
+- **Workflow from here**: install the preview APK once; after any JS change,
+  `cd mobile && npx eas-cli update --channel preview --message "..."` publishes
+  over the air — the app picks it up on next launch, any network, no dev
+  server. A new APK is only needed when native modules / app.json native
+  config change. The dev-client + `expo start` flow still exists for hot
+  reload sessions.
+
 ## Where things stand / what's next
 
 - PR #1 (`feat/notification-webhook`) and PR #2 (`feat/mobile-auth`, stacked on #1)
