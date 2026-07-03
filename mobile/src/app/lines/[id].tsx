@@ -1,5 +1,5 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Link, Stack, useLocalSearchParams } from 'expo-router';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { StatusBadge } from '@/components/StatusBadge';
 import { supabase } from '@/lib/supabase';
@@ -86,13 +86,16 @@ export default function LineDetailScreen() {
           </View>
         }
         renderItem={({ item: trip }) => (
-          <View style={styles.tripRow}>
-            <View style={styles.tripWhen}>
-              <Text style={styles.tripTime}>{departureTime(trip.scheduled_departure)}</Text>
-              <Text style={styles.tripDay}>{departureDayLabel(trip.scheduled_departure)}</Text>
-            </View>
-            <StatusBadge status={trip.status} delayMinutes={trip.delay_minutes} />
-          </View>
+          <Link href={`/trips/${trip.id}`} asChild>
+            <Pressable style={styles.tripRow}>
+              <View style={styles.tripWhen}>
+                <Text style={styles.tripTime}>{departureTime(trip.scheduled_departure)}</Text>
+                <Text style={styles.tripDay}>{departureDayLabel(trip.scheduled_departure)}</Text>
+              </View>
+              <StatusBadge status={trip.status} delayMinutes={trip.delay_minutes} />
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          </Link>
         )}
         ListEmptyComponent={
           !tripsLoading && !tripsError ? (
@@ -169,7 +172,7 @@ const styles = StyleSheet.create({
   tripRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
     backgroundColor: '#fff',
     borderRadius: 12,
     borderWidth: 1,
@@ -178,7 +181,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   tripWhen: {
+    flex: 1,
     gap: 2,
+  },
+  chevron: {
+    fontSize: 24,
+    color: '#98a2b3',
   },
   tripTime: {
     fontSize: 17,

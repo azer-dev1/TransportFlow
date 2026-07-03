@@ -23,6 +23,7 @@ function RootNavigator() {
         <Stack.Screen name="index" options={{ title: 'Lines' }} />
         <Stack.Screen name="profile" options={{ title: 'Profile' }} />
         <Stack.Screen name="lines/[id]" options={{ title: 'Line' }} />
+        <Stack.Screen name="trips/[id]" options={{ title: 'Trip' }} />
       </Stack.Protected>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
