@@ -2,16 +2,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import { useSupabaseQuery } from '@/lib/use-supabase-query';
 
 export default function ProfileScreen() {
-  const { session } = useAuth();
-  const userId = session?.user.id;
-
-  const { data: profile, error } = useSupabaseQuery(
-    () => supabase.from('profiles').select('*').eq('id', userId!).single(),
-    [userId],
-  );
+  const { session, profile } = useAuth();
 
   return (
     <View style={styles.container}>
@@ -25,7 +18,6 @@ export default function ProfileScreen() {
           </View>
         )}
         <Text style={styles.email}>{session?.user.email}</Text>
-        {error && <Text style={styles.error}>Profile failed to load: {error}</Text>}
       </View>
 
       <Pressable style={styles.signOut} onPress={() => supabase.auth.signOut()}>
@@ -71,9 +63,6 @@ const styles = StyleSheet.create({
   },
   email: {
     color: '#475467',
-  },
-  error: {
-    color: '#d92d20',
   },
   signOut: {
     marginTop: 'auto',

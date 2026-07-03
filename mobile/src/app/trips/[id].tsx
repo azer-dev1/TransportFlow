@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
+import { StaffReportCard } from '@/components/StaffReportCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { supabase } from '@/lib/supabase';
 import { useSupabaseQuery } from '@/lib/use-supabase-query';
@@ -95,6 +96,8 @@ export default function TripDetailScreen() {
                 <Text style={styles.departure}>{formatWhen(trip.scheduled_departure)}</Text>
                 <StatusBadge status={trip.status} delayMinutes={trip.delay_minutes} />
               </View>
+
+              <StaffReportCard tripId={trip.id} />
 
               <Text style={styles.sectionTitle}>Stops</Text>
               <View style={styles.card}>

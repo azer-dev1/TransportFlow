@@ -1,18 +1,21 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState } from 'react';
 
-import { supabase } from './supabase';
+import { supabase, type Profile } from './supabase';
 
 type AuthState = {
   session: Session | null;
+  /** created by the handle_new_user trigger; null while loading or signed out */
+  profile: Profile | null;
   /** true until the persisted session (if any) has been restored from storage */
   isLoading: boolean;
 };
 
-const AuthContext = createContext<AuthState>({ session: null, isLoading: true });
+const AuthContext = createContext<AuthState>({ session: null, profile: null, isLoading: true });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -28,7 +31,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.subscription.unsubscribe();
   }, []);
 
-  return <AuthContext.Provider value={{ session, isLoading }}>{children}</AuthContext.Provider>;
+  const userId = session?.user.id;
+  useEffect(() => {
+    if (!userId) {
+      setProfile(null);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+      .then(({ data }) => {
+        if (!cancelled) setProfile(data ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  return (
+    <AuthContext.Provider value={{ session, profile, isLoading }}>{children}</AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
