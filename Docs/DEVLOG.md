@@ -193,15 +193,37 @@ stack).
   activates when this branch merges to master; until then it can be run
   manually via workflow_dispatch.
 
+## Phase 9 — GTFS import: a real network (2026-07-03)
+
+`scripts/gtfs-import/` (Node, `adm-zip` + `csv-parse`) downloads any standard
+GTFS zip and maps it onto our model: routes → `lines`, served stops → `stops`,
+each route's **dominant stop sequence** (the one shared by the most trips) →
+`line_stops` with offsets from its representative trip, and first-stop
+departure times × `calendar.txt` weekdays → `service_patterns` (merged per
+departure time; after-midnight departures wrap the weekday). Ids are
+md5-derived from GTFS ids so re-runs upsert in place; patterns are replaced
+wholesale per line. Applies via the Management API (`SUPABASE_ACCESS_TOKEN`)
+in batched statements, or `--dry-run` writes the SQL to a file.
+
+Imported feed: **Mouv'enbus** (CA Provence Verte, France — Licence Ouverte
+v2.0, 31 routes / 195 served stops / 100 departure patterns). The hand-made
+demo lines and stops were deleted; rider-demo now favorites the busiest real
+stop (Place Clemenceau, Brignoles) so notification demos keep working.
+Verified on hosted: 362 trips materialized for the week, typo search
+("clemencau" → Place Clemenceau), nearby-stops around Brignoles centre, and
+correct Paris-time → UTC conversion (07:00 local = 05:00 UTC departures).
+
+Accepted lossiness (documented in the script's README): one direction per
+route, `calendar_dates.txt` exceptions ignored (school lines won't stop for
+holidays), representative travel times. Swapping cities = re-running the
+script with another feed URL.
+
 ## Where things stand / what's next
 
 - PR #1 (`feat/notification-webhook`) and PR #2 (`feat/mobile-auth`, stacked on #1)
   merged to master 2026-07-03 — everything above is on master.
 - **FCM V1 credentials** (`eas credentials`) are still needed before Android push
   notifications actually deliver to the phone.
-- **GTFS import** — replace the hand-made demo network with a real city's GTFS
-  feed (lines/stops/patterns in one import script). Big enough to be its own
-  session.
 - App screens for the Phase 7 backend: search UI, nearby/map view, alerts on
   line detail, mute + quiet-hours settings, and a notifications/unread screen.
 - Later: shareable `preview` APK builds, then Play Store via the `production` profile.

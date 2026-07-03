@@ -1,0 +1,13 @@
+{
+  "name": "gtfs-import",
+  "private": true,
+  "type": "module",
+  "description": "Import a GTFS feed into TransportFlow's lines/stops/line_stops/service_patterns",
+  "scripts": {
+    "import": "node index.mjs"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "csv-parse": "^6.1.0"
+  }
+}
