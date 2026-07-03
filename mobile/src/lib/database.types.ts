@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -223,6 +228,44 @@ export type Database = {
         }
         Relationships: []
       }
+      service_patterns: {
+        Row: {
+          active: boolean
+          created_at: string
+          days_of_week: number[]
+          departure_time: string
+          id: string
+          line_id: string
+          timezone: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          days_of_week?: number[]
+          departure_time: string
+          id?: string
+          line_id: string
+          timezone?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          days_of_week?: number[]
+          departure_time?: string
+          id?: string
+          line_id?: string
+          timezone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_patterns_line_id_fkey"
+            columns: ["line_id"]
+            isOneToOne: false
+            referencedRelation: "lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stops: {
         Row: {
           id: string
@@ -336,7 +379,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      complete_finished_trips: { Args: never; Returns: number }
+      materialize_trips: { Args: { days_ahead?: number }; Returns: number }
     }
     Enums: {
       [_ in never]: never
@@ -472,4 +516,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

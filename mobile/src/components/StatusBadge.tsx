@@ -4,6 +4,7 @@ const STATUS_STYLES: Record<string, { label: string; fg: string; bg: string }> =
   on_time: { label: 'On time', fg: '#067647', bg: '#ecfdf3' },
   delayed: { label: 'Delayed', fg: '#b54708', bg: '#fffaeb' },
   cancelled: { label: 'Cancelled', fg: '#d92d20', bg: '#fef3f2' },
+  completed: { label: 'Completed', fg: '#475467', bg: '#f2f4f7' },
 };
 
 export function StatusBadge({ status, delayMinutes }: { status: string; delayMinutes?: number }) {

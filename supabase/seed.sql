@@ -38,31 +38,34 @@ on conflict (id) do update
       arrival_offset_minutes = excluded.arrival_offset_minutes;
 
 -- =========================================================
--- Trips: date-relative, delete-and-reseed for the two demo lines so the
--- schedule is never empty regardless of when this script runs (today
--- through +2 days). Safe to re-run standalone (without a full db reset).
+-- Service patterns: the recurring timetable (migration 5). Trips are no
+-- longer seeded directly — the materialize_trips() call below (and the
+-- nightly pg_cron job thereafter) generates them from these patterns, so
+-- the schedule never runs dry. Upsert on (line_id, departure_time) keeps
+-- this block idempotent.
 -- =========================================================
-delete from public.trips
-where line_id in (
-  '11111111-1111-1111-1111-111111111111',
-  '22222222-2222-2222-2222-222222222222'
-);
 
--- Bus: hourly departures 07:00-21:00, for today + next 2 days
-insert into public.trips (line_id, scheduled_departure)
+-- Bus: hourly departures 07:00-21:00, every day
+insert into public.service_patterns (line_id, departure_time)
 select
   '11111111-1111-1111-1111-111111111111',
-  date_trunc('day', now()) + (d || ' days')::interval + interval '7 hours' + (h || ' hours')::interval
-from generate_series(0, 2) as d
-cross join generate_series(0, 14) as h;  -- 07:00 .. 21:00 hourly
+  (time '07:00' + make_interval(hours => h))::time
+from generate_series(0, 14) as h  -- 07:00 .. 21:00 hourly
+on conflict (line_id, departure_time)
+  do update set days_of_week = excluded.days_of_week, active = true;
 
--- Train: every 2 hours 06:00-20:00, for today + next 2 days
-insert into public.trips (line_id, scheduled_departure)
+-- Train: every 2 hours 06:00-20:00, every day
+insert into public.service_patterns (line_id, departure_time)
 select
   '22222222-2222-2222-2222-222222222222',
-  date_trunc('day', now()) + (d || ' days')::interval + interval '6 hours' + (h * 2 || ' hours')::interval
-from generate_series(0, 2) as d
-cross join generate_series(0, 7) as h;  -- 06:00, 08:00, ... 20:00
+  (time '06:00' + make_interval(hours => h * 2))::time
+from generate_series(0, 7) as h  -- 06:00, 08:00, ... 20:00
+on conflict (line_id, departure_time)
+  do update set days_of_week = excluded.days_of_week, active = true;
+
+-- Materialize the first 7 days immediately so the app has departures
+-- without waiting for the nightly cron run.
+select public.materialize_trips(7);
 
 -- =========================================================
 -- Demo staff account promotion (idempotent — safe to re-run)

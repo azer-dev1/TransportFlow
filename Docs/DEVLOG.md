@@ -35,9 +35,9 @@ and that's done.
   webhook (URL + service key read from Vault secrets `edge_url` /
   `edge_service_role_key`) → Edge Function finds everyone who favorited the line or
   a stop on it → writes `notifications` rows → sends Expo push to their `devices`.
-- **Seed** (`supabase/seed.sql`): 2 demo lines, 7 stops, date-relative trips
-  (today + 2 days — re-run the trips block if the schedule goes stale), demo staff
-  promotion. Demo accounts: `rider-demo@transportflow.app` /
+- **Seed** (`supabase/seed.sql`): 2 demo lines, 7 stops, trips (originally
+  hand-seeded for today + 2 days; replaced by the Phase 5 scheduling layer), demo
+  staff promotion. Demo accounts: `rider-demo@transportflow.app` /
   `staff-demo@transportflow.app`, password `password123`.
 
 ## Phase 2 — Mobile app, 7 steps (branch `feat/mobile-auth`, PR #2)
@@ -89,6 +89,33 @@ users seeded, webhook round-trip confirmed (HTTP 200 in `net._http_response`).
 Caveats: the free tier pauses the DB after ~1 week of inactivity (restore from the
 dashboard); never commit the hosted `service_role` key; never run seed.sql's
 "LOCAL DEV ONLY" Vault block against the hosted project.
+
+## Phase 5 — A real timetable: service patterns + pg_cron (2026-07-03)
+
+The seed only generated trips for today + 2 days, so the schedule would have gone
+permanently empty on 2026-07-06. Migration `…05_service_patterns.sql` turns trips
+into the materialized output of a recurring timetable, entirely inside Postgres:
+
+- **`service_patterns`** — one row per recurring departure ("Blue Line, 07:00,
+  Mon–Sun"), with wall-clock times in a per-pattern timezone (`Africa/Tunis`) so
+  departures survive DST. Catalog-style RLS: clients read, only seed/SQL writes.
+- **`materialize_trips(days_ahead)`** — expands patterns into concrete `trips`
+  rows; idempotent thanks to a new `UNIQUE (line_id, scheduled_departure)` index.
+  A **pg_cron** job (`materialize-trips`, 02:15 UTC nightly) keeps a rolling
+  7-day horizon.
+- **`complete_finished_trips()`** — second cron (`complete-finished-trips`, every
+  10 min) marks trips **`completed`** (new status) once departure + delay + the
+  line's last arrival offset + 5 min grace has passed, so "upcoming departures"
+  stay clean and stale delays don't linger. Deliberately not a valid
+  `trip_updates` status — completion is a lifecycle fact, not a staff report.
+- Both functions are SECURITY DEFINER with EXECUTE revoked from clients (not
+  exposed as RPC). The seed's trip blocks were replaced by pattern upserts + one
+  `materialize_trips(7)` call.
+
+Deployed to hosted the same day: patterns seeded, 7 days of trips materialized,
+both cron jobs verified running (`cron.job_run_details`). One cleanup: the old
+seed wrote UTC wall times, patterns write Tunis local — 22 leftover off-by-1h
+"phantom" future trips were deleted (any trip with staff reports was kept).
 
 ## Where things stand / what's next
 
