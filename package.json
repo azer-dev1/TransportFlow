@@ -1,0 +1,12 @@
+{
+  "name": "transportflow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TransportFlow monorepo tooling (mobile app is in /mobile)",
+  "scripts": {
+    "supabase": "supabase"
+  },
+  "devDependencies": {
+    "supabase": "^2.109.0"
+  }
+}
