@@ -3,9 +3,11 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/lib/auth-context';
+import { usePushNotifications } from '@/lib/notifications';
 
 function RootNavigator() {
   const { session, isLoading } = useAuth();
+  usePushNotifications(session?.user.id);
 
   if (isLoading) {
     // Hold rendering until the persisted session is restored so signed-in
