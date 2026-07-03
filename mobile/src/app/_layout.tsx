@@ -20,7 +20,9 @@ function RootNavigator() {
   return (
     <Stack>
       <Stack.Protected guard={!!session}>
-        <Stack.Screen name="index" options={{ title: 'TransportFlow' }} />
+        <Stack.Screen name="index" options={{ title: 'Lines' }} />
+        <Stack.Screen name="profile" options={{ title: 'Profile' }} />
+        <Stack.Screen name="lines/[id]" options={{ title: 'Line' }} />
       </Stack.Protected>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
