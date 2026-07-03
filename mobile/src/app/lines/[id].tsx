@@ -1,6 +1,8 @@
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AlertBanner } from '@/components/AlertBanner';
+import { StaffAlertCard } from '@/components/StaffAlertCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Star } from '@/components/Star';
 import { supabase } from '@/lib/supabase';
@@ -27,6 +29,19 @@ export default function LineDetailScreen() {
 
   const { data: line } = useSupabaseQuery(
     () => supabase.from('lines').select('*').eq('id', id).single(),
+    [id],
+  );
+
+  // Active service alerts: started, and not yet ended (or open-ended).
+  const { data: alerts, refetch: refetchAlerts } = useSupabaseQuery(
+    () =>
+      supabase
+        .from('service_alerts')
+        .select('*')
+        .eq('line_id', id)
+        .lte('starts_at', new Date().toISOString())
+        .or(`ends_at.is.null,ends_at.gt.${new Date().toISOString()}`)
+        .order('starts_at', { ascending: false }),
     [id],
   );
 
@@ -71,6 +86,17 @@ export default function LineDetailScreen() {
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <View style={styles.header}>
+            {(alerts ?? []).map((alert) => (
+              <AlertBanner
+                key={alert.id}
+                title={alert.title}
+                body={alert.body}
+                severity={alert.severity}
+              />
+            ))}
+
+            <StaffAlertCard lineId={id} onPosted={refetchAlerts} />
+
             <Text style={styles.sectionTitle}>Stops</Text>
             {stopsError && <Text style={styles.error}>Stops failed to load: {stopsError}</Text>}
             {mutationError && <Text style={styles.error}>Favorite change failed: {mutationError}</Text>}

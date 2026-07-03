@@ -25,7 +25,7 @@ export function StaffReportCard({ tripId }: { tripId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  if (!session || profile?.role !== 'staff') return null;
+  if (!session || (profile?.role !== 'staff' && profile?.role !== 'admin')) return null;
 
   const delay = status === 'delayed' ? Number.parseInt(minutes, 10) : 0;
   const canSubmit = !submitting && (status !== 'delayed' || (Number.isInteger(delay) && delay > 0));
