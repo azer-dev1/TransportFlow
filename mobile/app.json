@@ -4,6 +4,12 @@
     "slug": "transportflow",
     "scheme": "transportflow",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f6939a50-3975-40a1-8699-18b7c6fc8a16"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
