@@ -6,8 +6,23 @@ import { useFavorites } from '@/lib/use-favorites';
 
 const MODE_ICONS: Record<string, string> = { bus: '🚌', train: '🚆' };
 
+/** Bell toggle: muted favorites stay starred but never notify. */
+function MuteBell({ muted, onPress }: { muted: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel={muted ? 'Unmute notifications' : 'Mute notifications'}
+    >
+      <Text style={[styles.bell, muted && styles.bellMuted]}>{muted ? '🔕' : '🔔'}</Text>
+    </Pressable>
+  );
+}
+
 export default function FavoritesScreen() {
-  const { favorites, error, isLoading, mutationError, toggleLine, toggleStop } = useFavorites();
+  const { favorites, error, isLoading, mutationError, toggleLine, toggleStop, setMuted } =
+    useFavorites();
 
   const lines = favorites.filter((f) => f.lines);
   const stops = favorites.filter((f) => f.stops);
@@ -32,6 +47,10 @@ export default function FavoritesScreen() {
               <Pressable style={styles.row}>
                 <Text style={styles.modeIcon}>{MODE_ICONS[favorite.lines!.mode] ?? '🚏'}</Text>
                 <Text style={styles.rowName}>{favorite.lines!.name}</Text>
+                <MuteBell
+                  muted={favorite.muted}
+                  onPress={() => setMuted(favorite.id, !favorite.muted)}
+                />
                 <Star active onPress={() => toggleLine(favorite.lines!.id)} />
               </Pressable>
             </Link>
@@ -46,10 +65,20 @@ export default function FavoritesScreen() {
             <View key={favorite.id} style={styles.row}>
               <Text style={styles.modeIcon}>🚏</Text>
               <Text style={styles.rowName}>{favorite.stops!.name}</Text>
+              <MuteBell
+                muted={favorite.muted}
+                onPress={() => setMuted(favorite.id, !favorite.muted)}
+              />
               <Star active onPress={() => toggleStop(favorite.stops!.id)} />
             </View>
           ))}
         </>
+      )}
+
+      {favorites.some((f) => f.muted) && (
+        <Text style={styles.mutedHint}>
+          🔕 Muted favorites stay in your list but won't send notifications.
+        </Text>
       )}
     </ScrollView>
   );
@@ -99,5 +128,17 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
+  },
+  bell: {
+    fontSize: 18,
+  },
+  bellMuted: {
+    opacity: 0.5,
+  },
+  mutedHint: {
+    color: '#98a2b3',
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 8,
   },
 });

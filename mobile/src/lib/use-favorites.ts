@@ -22,7 +22,7 @@ export function useFavorites() {
     () =>
       supabase
         .from('favorites')
-        .select('id, line_id, stop_id, lines(id, name, mode), stops(id, name)')
+        .select('id, line_id, stop_id, muted, lines(id, name, mode), stops(id, name)')
         .eq('user_id', userId!),
     [userId],
   );
@@ -45,6 +45,20 @@ export function useFavorites() {
     setIsMutating(false);
   }
 
+  /** Muted favorites stay starred but are excluded from notification fan-out. */
+  async function setMuted(favoriteId: string, muted: boolean) {
+    if (isMutating) return;
+    setIsMutating(true);
+    setMutationError(null);
+    const { error: mutateError } = await supabase
+      .from('favorites')
+      .update({ muted })
+      .eq('id', favoriteId);
+    if (mutateError) setMutationError(mutateError.message);
+    refetch();
+    setIsMutating(false);
+  }
+
   return {
     favorites: favorites ?? [],
     error,
@@ -52,6 +66,7 @@ export function useFavorites() {
     refetch,
     isMutating,
     mutationError,
+    setMuted,
     isLineFavorite: (lineId: string) => !!lineFavorite(lineId),
     isStopFavorite: (stopId: string) => !!stopFavorite(stopId),
     toggleLine: (lineId: string) => toggle(lineFavorite(lineId), { line_id: lineId }),

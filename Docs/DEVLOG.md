@@ -218,14 +218,37 @@ route, `calendar_dates.txt` exceptions ignored (school lines won't stop for
 holidays), representative travel times. Swapping cities = re-running the
 script with another feed URL.
 
+## Phase 10 — App screens for the Phase 7 backend (2026-07-03)
+
+Migration `…09` (notifications added to the realtime publication) + five screens
+of UI wiring, no new backend logic:
+
+- **Search on home**: debounced input over the `search_lines` / `search_stops`
+  RPCs; stop hits show chips of the lines serving them (with 31 real lines,
+  browsing without search was getting clunky).
+- **Notifications screen + live unread badge**: bell in the home header with a
+  count from `useUnreadCount` (head-count query + realtime INSERT/UPDATE
+  subscription); the screen marks everything read once per visit while keeping
+  the unread highlights visible, and taps deep-link to the trip.
+- **Service alerts on line detail**: active alerts (started, not ended) render
+  as severity-colored banners; staff/admin get a compose card (title, body,
+  severity) that posts to `service_alerts` and triggers the fan-out.
+- **Mute per favorite**: bell toggle on each favorites row (`favorites.muted`).
+- **Quiet hours on profile**: switch + HH:MM window saved to
+  `notification_prefs` with the device's timezone; off deletes the row.
+
+Also: staff cards now show for the `admin` role too. Verified with
+`tsc --noEmit` and live backend checks; on-phone walkthrough still pending
+(needs the dev build + `expo start`).
+
 ## Where things stand / what's next
 
 - PR #1 (`feat/notification-webhook`) and PR #2 (`feat/mobile-auth`, stacked on #1)
   merged to master 2026-07-03 — everything above is on master.
 - **FCM V1 credentials** (`eas credentials`) are still needed before Android push
   notifications actually deliver to the phone.
-- App screens for the Phase 7 backend: search UI, nearby/map view, alerts on
-  line detail, mute + quiet-hours settings, and a notifications/unread screen.
+- Nearby/map view (the one Phase 7 surface still without UI — needs a map
+  library + location permission, so it's its own chunk).
 - Later: shareable `preview` APK builds, then Play Store via the `production` profile.
 
 ## Gotchas worth remembering
