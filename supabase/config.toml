@@ -385,6 +385,14 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Notification fan-out, invoked by the trip_updates INSERT database webhook
+# (migration 00000000000003). verify_jwt stays on: the webhook authenticates
+# with the service_role Bearer token stored in Vault. SUPABASE_URL /
+# SUPABASE_SERVICE_ROLE_KEY are auto-injected by the runtime.
+[functions.notify-trip-update]
+enabled = true
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327
