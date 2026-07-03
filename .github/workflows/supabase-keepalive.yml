@@ -1,0 +1,24 @@
+# Supabase's free tier pauses a project after ~1 week without API activity.
+# Two authenticated REST queries a week keep TransportFlow alive with margin.
+# Requires the SUPABASE_ANON_KEY repo secret (the publishable anon key —
+# same one the mobile app ships with, NOT service_role).
+#
+# Note: scheduled workflows only run from the default branch, so this starts
+# working once merged to master. Trigger manually via workflow_dispatch to test.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '17 6 * * 1,4' # Mon + Thu 06:17 UTC
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query the REST API
+        run: |
+          curl --fail-with-body -sS \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "https://cxekufirfbjoieztiqbz.supabase.co/rest/v1/lines?select=id&limit=1"
