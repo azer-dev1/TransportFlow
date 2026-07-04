@@ -337,38 +337,11 @@ function DeleteAccountButton() {
 }
 
 /**
- * Shows which JS bundle is actually running (embedded vs OTA update) and
- * offers a manual check — expo-updates' background download only applies on
- * the launch after next, which is hard to reason about; this makes it one tap
- * and surfaces any errors instead of failing silently.
+ * Shows which JS bundle is actually running (embedded vs OTA update).
+ * Updates install themselves: expo-updates downloads in the background on
+ * launch and applies on the next cold start — no manual check needed.
  */
 function UpdatesCard() {
-  const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-
-  async function checkNow() {
-    setBusy(true);
-    setStatus(null);
-    try {
-      const result = await Updates.checkForUpdateAsync();
-      if (!result.isAvailable) {
-        setStatus('App is up to date.');
-        setBusy(false);
-        return;
-      }
-      setStatus('Downloading update…');
-      await Updates.fetchUpdateAsync();
-      // No reloadAsync: on Android it races the React root remount and can
-      // freeze on a gray screen (expo/expo#19213). A fetched update applies
-      // itself on the next cold start, so just ask for a restart.
-      setStatus('Update downloaded — close and reopen the app to apply it.');
-      setBusy(false);
-    } catch (err) {
-      setStatus(`Update check failed: ${err instanceof Error ? err.message : String(err)}`);
-      setBusy(false);
-    }
-  }
-
   return (
     <Card>
       <Text style={styles.cardTitle}>App version</Text>
@@ -377,14 +350,6 @@ function UpdatesCard() {
         {'\n'}
         Running: {Updates.isEmbeddedLaunch ? 'built-in bundle' : `update ${Updates.updateId ?? '?'}`}
       </Text>
-      {status && <Text style={styles.cardHint}>{status}</Text>}
-      <Button
-        label="Check for updates"
-        variant="outline"
-        onPress={checkNow}
-        loading={busy}
-        style={styles.saveButton}
-      />
     </Card>
   );
 }
