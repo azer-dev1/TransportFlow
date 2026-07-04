@@ -1,3 +1,4 @@
+import { Link } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text } from 'react-native';
 
@@ -41,6 +42,9 @@ export default function ForgotPasswordScreen() {
           If an account exists for {email.trim()}, we sent it a password reset link. Open the
           link on this phone to choose a new password.
         </Text>
+        <Link href="/sign-in" style={styles.backLink}>
+          Back to sign in
+        </Link>
       </KeyboardAvoidingView>
     );
   }
@@ -73,6 +77,10 @@ export default function ForgotPasswordScreen() {
         disabled={!canSubmit}
         loading={submitting}
       />
+
+      <Link href="/sign-in" style={styles.backLink}>
+        Back to sign in
+      </Link>
     </KeyboardAvoidingView>
   );
 }
@@ -96,5 +104,12 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     lineHeight: 21,
     marginBottom: spacing.sm,
+  },
+  backLink: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
 });
