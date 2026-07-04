@@ -1,3 +1,4 @@
+import * as Updates from 'expo-updates';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -333,6 +334,55 @@ function DeleteAccountButton() {
   );
 }
 
+/**
+ * Shows which JS bundle is actually running (embedded vs OTA update) and
+ * offers a manual check — expo-updates' background download only applies on
+ * the launch after next, which is hard to reason about; this makes it one tap
+ * and surfaces any errors instead of failing silently.
+ */
+function UpdatesCard() {
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+
+  async function checkNow() {
+    setBusy(true);
+    setStatus(null);
+    try {
+      const result = await Updates.checkForUpdateAsync();
+      if (!result.isAvailable) {
+        setStatus('App is up to date.');
+        setBusy(false);
+        return;
+      }
+      setStatus('Downloading update…');
+      await Updates.fetchUpdateAsync();
+      await Updates.reloadAsync();
+    } catch (err) {
+      setStatus(`Update check failed: ${err instanceof Error ? err.message : String(err)}`);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card>
+      <Text style={styles.cardTitle}>App version</Text>
+      <Text style={styles.cardHint}>
+        Channel: {Updates.channel ?? 'none'} · runtime {Updates.runtimeVersion ?? '—'}
+        {'\n'}
+        Running: {Updates.isEmbeddedLaunch ? 'built-in bundle' : `update ${Updates.updateId ?? '?'}`}
+      </Text>
+      {status && <Text style={styles.cardHint}>{status}</Text>}
+      <Button
+        label="Check for updates"
+        variant="outline"
+        onPress={checkNow}
+        loading={busy}
+        style={styles.saveButton}
+      />
+    </Card>
+  );
+}
+
 export default function ProfileScreen() {
   const { session, profile, refreshProfile } = useAuth();
 
@@ -355,6 +405,8 @@ export default function ProfileScreen() {
       <ChangePasswordCard />
 
       {session && <QuietHoursCard userId={session.user.id} />}
+
+      <UpdatesCard />
 
       <View style={styles.footer}>
         <Button label="Sign out" variant="outline" onPress={() => supabase.auth.signOut()} />
