@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-na
 import { Button } from '@/components/Button';
 import { ErrorText } from '@/components/ErrorText';
 import { FormInput } from '@/components/FormInput';
+import { PasswordInput } from '@/components/PasswordInput';
 import { supabase } from '@/lib/supabase';
 import { colors, fontSize, spacing } from '@/lib/theme';
 
@@ -46,10 +47,9 @@ export default function SignInScreen() {
         value={email}
         onChangeText={setEmail}
       />
-      <FormInput
+      <PasswordInput
         placeholder="Password"
         autoComplete="current-password"
-        secureTextEntry
         value={password}
         onChangeText={setPassword}
         onSubmitEditing={() => canSubmit && signIn()}

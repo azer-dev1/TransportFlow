@@ -4,7 +4,7 @@ import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text } from 'react-n
 
 import { Button } from '@/components/Button';
 import { ErrorText } from '@/components/ErrorText';
-import { FormInput } from '@/components/FormInput';
+import { PasswordInput } from '@/components/PasswordInput';
 import { supabase } from '@/lib/supabase';
 import { colors, fontSize, spacing } from '@/lib/theme';
 
@@ -76,17 +76,15 @@ export default function ResetPasswordScreen() {
         </Text>
       ) : (
         <>
-          <FormInput
+          <PasswordInput
             placeholder="New password"
             autoComplete="new-password"
-            secureTextEntry
             value={password}
             onChangeText={setPassword}
           />
-          <FormInput
+          <PasswordInput
             placeholder="Repeat new password"
             autoComplete="new-password"
-            secureTextEntry
             value={confirm}
             onChangeText={setConfirm}
             onSubmitEditing={() => canSubmit && submit()}

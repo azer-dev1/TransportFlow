@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ErrorText } from '@/components/ErrorText';
+import { PasswordInput } from '@/components/PasswordInput';
 import { Spinner } from '@/components/Spinner';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
@@ -92,7 +93,12 @@ function QuietHoursCard({ userId }: { userId: string }) {
     <Card>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>Quiet hours</Text>
-        <Switch value={enabled} onValueChange={toggle} />
+        <Switch
+          value={enabled}
+          onValueChange={toggle}
+          trackColor={{ false: colors.borderStrong, true: colors.primary }}
+          thumbColor={colors.surface}
+        />
       </View>
       <Text style={styles.cardHint}>
         No push notifications during these hours — you'll still find everything in your
@@ -262,19 +268,15 @@ function ChangePasswordCard() {
 
       {open && (
         <>
-          <TextInput
-            style={styles.input}
+          <PasswordInput
             placeholder="New password"
             autoComplete="new-password"
-            secureTextEntry
             value={password}
             onChangeText={setPassword}
           />
-          <TextInput
-            style={styles.input}
+          <PasswordInput
             placeholder="Repeat new password"
             autoComplete="new-password"
-            secureTextEntry
             value={confirm}
             onChangeText={setConfirm}
             onSubmitEditing={() => canSave && save()}
@@ -394,8 +396,9 @@ export default function ProfileScreen() {
         ) : (
           <Text style={styles.greeting}>Loading…</Text>
         )}
-        {profile && (
-          <View style={[styles.badge, profile.role !== 'rider' && styles.badgeStaff]}>
+        {/* Everyone is a rider by default — only elevated roles are worth a badge. */}
+        {profile && profile.role !== 'rider' && (
+          <View style={styles.badge}>
             <Text style={styles.badgeText}>{profile.role}</Text>
           </View>
         )}
@@ -485,13 +488,10 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.primarySurface,
+    backgroundColor: colors.warningChip,
     borderRadius: radii.pill,
     paddingHorizontal: 10,
     paddingVertical: 2,
-  },
-  badgeStaff: {
-    backgroundColor: colors.warningChip,
   },
   badgeText: {
     fontSize: fontSize.xs,
