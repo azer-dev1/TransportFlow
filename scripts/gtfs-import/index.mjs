@@ -40,6 +40,10 @@ function argValue(flag, fallback = undefined) {
 const FILE = argValue("--file");
 const URL_ = argValue("--url");
 const MAX_ROUTES = Number(argValue("--max-routes", "40"));
+// Namespace folded into every generated id, so feeds whose GTFS ids overlap
+// (e.g. two agencies both using route_id "1") can coexist. "" keeps the ids
+// of historical single-feed imports.
+const PREFIX = argValue("--prefix", "");
 const PROJECT_REF = argValue("--project-ref", process.env.SUPABASE_PROJECT_REF ?? "cxekufirfbjoieztiqbz");
 const DRY_RUN = args.includes("--dry-run");
 const SQL_OUT = argValue("--sql-out", "gtfs-import.sql");
@@ -88,7 +92,11 @@ const stopTimes = readCsv("stop_times.txt");
 const calendar = readCsv("calendar.txt", false);
 const calendarDates = readCsv("calendar_dates.txt", false);
 
-const TIMEZONE = agency[0]?.agency_timezone || "UTC";
+// Some feeds miscase the tz (TRANSTU ships "AFRICA/TUNIS"); canonicalize
+// against the IANA names Node knows so downstream tz math is safe.
+const rawTz = agency[0]?.agency_timezone || "UTC";
+const TIMEZONE =
+  Intl.supportedValuesOf("timeZone").find((z) => z.toLowerCase() === rawTz.toLowerCase()) ?? rawTz;
 
 // ---------- service_id -> ISO weekdays (1=Mon..7=Sun) ----------
 const WEEKDAY_COLS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
@@ -131,7 +139,7 @@ function toMinutes(hms) {
 
 // ---------- per route: dominant sequence, offsets, departure patterns ----------
 function md5Uuid(seed) {
-  const h = createHash("md5").update(seed).digest("hex");
+  const h = createHash("md5").update(PREFIX ? `${PREFIX}:${seed}` : seed).digest("hex");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 

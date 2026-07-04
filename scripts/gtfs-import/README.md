@@ -19,6 +19,10 @@ SUPABASE_ACCESS_TOKEN=sbp_... node index.mjs --url https://transport.data.gouv.f
 
 - `--url` / `--file` — the GTFS zip. Any standard feed works; small networks
   (≤ ~50 routes) fit the free tier comfortably.
+- `--prefix NAME` — id namespace for multi-feed imports (e.g. `--prefix transtu`).
+  Feeds from different agencies often reuse GTFS ids (`route_id` "1"), which
+  would otherwise collide. Re-running with the same prefix upserts in place;
+  omitting it keeps compatibility with pre-prefix imports.
 - `--max-routes N` — cap on imported routes, ranked by trip count (default 40).
 - `--project-ref` — target project (default: the hosted TransportFlow ref,
   override via flag or `SUPABASE_PROJECT_REF`).
