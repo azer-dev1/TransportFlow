@@ -11,6 +11,7 @@ import { SectionTitle } from '@/components/SectionTitle';
 import { StaffAlertCard } from '@/components/StaffAlertCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Star } from '@/components/Star';
+import { StopsMap } from '@/components/StopsMap';
 import { supabase } from '@/lib/supabase';
 import { colors, fontSize, spacing } from '@/lib/theme';
 import { useFavorites } from '@/lib/use-favorites';
@@ -56,7 +57,7 @@ export default function LineDetailScreen() {
     () =>
       supabase
         .from('line_stops')
-        .select('id, sequence_order, arrival_offset_minutes, stops(id, name)')
+        .select('id, sequence_order, arrival_offset_minutes, stops(id, name, latitude, longitude)')
         .eq('line_id', id)
         .order('sequence_order'),
     [id],
@@ -112,6 +113,22 @@ export default function LineDetailScreen() {
             ))}
 
             <StaffAlertCard lineId={id} onPosted={refetchAlerts} />
+
+            <StopsMap
+              connected
+              stops={(lineStops ?? [])
+                .filter((ls) => ls.stops)
+                .map((ls) => ({
+                  id: ls.stops!.id,
+                  name: ls.stops!.name,
+                  latitude: ls.stops!.latitude,
+                  longitude: ls.stops!.longitude,
+                  description:
+                    ls.arrival_offset_minutes === 0
+                      ? 'Departure'
+                      : `+${ls.arrival_offset_minutes} min`,
+                }))}
+            />
 
             <SectionTitle style={styles.sectionTitle}>Stops</SectionTitle>
             {stopsError && <ErrorText>Stops failed to load: {stopsError}</ErrorText>}

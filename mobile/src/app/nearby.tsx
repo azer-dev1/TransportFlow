@@ -9,12 +9,15 @@ import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorText } from '@/components/ErrorText';
+import { StopsMap } from '@/components/StopsMap';
 import { supabase } from '@/lib/supabase';
 import { colors, fontSize, spacing } from '@/lib/theme';
 
 type NearbyStop = {
   id: string;
   name: string;
+  latitude: number;
+  longitude: number;
   distance_m: number;
   lines: { id: string; name: string }[];
 };
@@ -55,6 +58,8 @@ function useNearbyStops() {
       const hits: NearbyStop[] = (data ?? []).map((s) => ({
         id: s.id,
         name: s.name,
+        latitude: s.latitude,
+        longitude: s.longitude,
         distance_m: s.distance_m,
         lines: [],
       }));
@@ -119,31 +124,48 @@ export default function NearbyScreen() {
   }
 
   return (
-    <FlatList
-      style={styles.container}
-      data={stops ?? []}
-      keyExtractor={(stop) => stop.id}
-      contentContainerStyle={styles.list}
-      renderItem={({ item }) => (
-        <Card style={styles.stopCard}>
-          <View style={styles.stopHeader}>
-            <Ionicons name="location-outline" size={18} color={colors.primary} />
-            <Text style={styles.stopName}>{item.name}</Text>
-            <Text style={styles.distance}>{formatDistance(item.distance_m)}</Text>
-          </View>
-          {item.lines.length > 0 && (
-            <View style={styles.chips}>
-              {item.lines.map((l) => (
-                <Link key={l.id} href={`/lines/${l.id}`} asChild>
-                  <Chip label={l.name} />
-                </Link>
-              ))}
-            </View>
-          )}
-        </Card>
+    <View style={styles.container}>
+      {(stops?.length ?? 0) > 0 && (
+        <View style={styles.mapWrap}>
+          <StopsMap
+            stops={(stops ?? []).map((s) => ({
+              id: s.id,
+              name: s.name,
+              latitude: s.latitude,
+              longitude: s.longitude,
+              description: formatDistance(s.distance_m),
+            }))}
+            showsUserLocation
+            height={260}
+          />
+        </View>
       )}
-      ListEmptyComponent={<EmptyState>No stops within 3 km of your location.</EmptyState>}
-    />
+      <FlatList
+        style={styles.listFlex}
+        data={stops ?? []}
+        keyExtractor={(stop) => stop.id}
+        contentContainerStyle={styles.list}
+        renderItem={({ item }) => (
+          <Card style={styles.stopCard}>
+            <View style={styles.stopHeader}>
+              <Ionicons name="location-outline" size={18} color={colors.primary} />
+              <Text style={styles.stopName}>{item.name}</Text>
+              <Text style={styles.distance}>{formatDistance(item.distance_m)}</Text>
+            </View>
+            {item.lines.length > 0 && (
+              <View style={styles.chips}>
+                {item.lines.map((l) => (
+                  <Link key={l.id} href={`/lines/${l.id}`} asChild>
+                    <Chip label={l.name} />
+                  </Link>
+                ))}
+              </View>
+            )}
+          </Card>
+        )}
+        ListEmptyComponent={<EmptyState>No stops within 3 km of your location.</EmptyState>}
+      />
+    </View>
   );
 }
 
@@ -168,6 +190,13 @@ const styles = StyleSheet.create({
   },
   centerError: {
     textAlign: 'center',
+  },
+  mapWrap: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  listFlex: {
+    flex: 1,
   },
   list: {
     padding: spacing.lg,
