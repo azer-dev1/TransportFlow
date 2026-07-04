@@ -1,11 +1,18 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { AlertBanner } from '@/components/AlertBanner';
+import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorText } from '@/components/ErrorText';
+import { Row } from '@/components/Row';
+import { SectionTitle } from '@/components/SectionTitle';
 import { StaffAlertCard } from '@/components/StaffAlertCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Star } from '@/components/Star';
 import { supabase } from '@/lib/supabase';
+import { colors, fontSize, spacing } from '@/lib/theme';
 import { useFavorites } from '@/lib/use-favorites';
 import { useSupabaseQuery } from '@/lib/use-supabase-query';
 
@@ -106,10 +113,10 @@ export default function LineDetailScreen() {
 
             <StaffAlertCard lineId={id} onPosted={refetchAlerts} />
 
-            <Text style={styles.sectionTitle}>Stops</Text>
-            {stopsError && <Text style={styles.error}>Stops failed to load: {stopsError}</Text>}
-            {mutationError && <Text style={styles.error}>Favorite change failed: {mutationError}</Text>}
-            <View style={styles.card}>
+            <SectionTitle style={styles.sectionTitle}>Stops</SectionTitle>
+            {stopsError && <ErrorText>Stops failed to load: {stopsError}</ErrorText>}
+            {mutationError && <ErrorText>Favorite change failed: {mutationError}</ErrorText>}
+            <Card style={styles.stopsCard}>
               {(lineStops ?? []).map((ls, index) => (
                 <View key={ls.id} style={styles.stopRow}>
                   <View style={styles.stopMarkerColumn}>
@@ -129,28 +136,28 @@ export default function LineDetailScreen() {
                   )}
                 </View>
               ))}
-            </View>
+            </Card>
 
-            <Text style={styles.sectionTitle}>Upcoming departures</Text>
+            <SectionTitle style={styles.sectionTitle}>Upcoming departures</SectionTitle>
             {tripsLoading && <ActivityIndicator style={styles.spinner} />}
-            {tripsError && <Text style={styles.error}>Schedule failed to load: {tripsError}</Text>}
+            {tripsError && <ErrorText>Schedule failed to load: {tripsError}</ErrorText>}
           </View>
         }
         renderItem={({ item: trip }) => (
           <Link href={`/trips/${trip.id}`} asChild>
-            <Pressable style={styles.tripRow}>
+            <Row style={styles.tripRow}>
               <View style={styles.tripWhen}>
                 <Text style={styles.tripTime}>{departureTime(trip.scheduled_departure)}</Text>
                 <Text style={styles.tripDay}>{departureDayLabel(trip.scheduled_departure)}</Text>
               </View>
               <StatusBadge status={trip.status} delayMinutes={trip.delay_minutes} />
-              <Text style={styles.chevron}>›</Text>
-            </Pressable>
+              <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+            </Row>
           </Link>
         )}
         ListEmptyComponent={
           !tripsLoading && !tripsError ? (
-            <Text style={styles.empty}>No upcoming departures.</Text>
+            <EmptyState>No upcoming departures.</EmptyState>
           ) : null
         }
       />
@@ -161,31 +168,25 @@ export default function LineDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bg,
   },
   list: {
-    padding: 16,
+    padding: spacing.lg,
     gap: 10,
   },
   header: {
     gap: 10,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#eaecf0',
-    padding: 16,
+  stopsCard: {
+    gap: 0,
   },
   stopRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: spacing.md,
   },
   stopMarkerColumn: {
     alignItems: 'center',
@@ -195,62 +196,44 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#175cd3',
+    backgroundColor: colors.primary,
     marginTop: 5,
   },
   stopLine: {
     width: 2,
     flex: 1,
     minHeight: 18,
-    backgroundColor: '#d0d5dd',
+    backgroundColor: colors.borderStrong,
   },
   stopName: {
     flex: 1,
-    fontSize: 15,
+    fontSize: fontSize.sm,
     fontWeight: '500',
-    paddingBottom: 16,
+    color: colors.text,
+    paddingBottom: spacing.lg,
   },
   stopOffset: {
-    color: '#475467',
+    color: colors.textMuted,
     fontVariant: ['tabular-nums'],
   },
   spinner: {
-    marginVertical: 8,
-  },
-  error: {
-    color: '#d92d20',
+    marginVertical: spacing.sm,
   },
   tripRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#eaecf0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
   },
   tripWhen: {
     flex: 1,
     gap: 2,
   },
-  chevron: {
-    fontSize: 24,
-    color: '#98a2b3',
-  },
   tripTime: {
     fontSize: 17,
     fontWeight: '700',
+    color: colors.text,
     fontVariant: ['tabular-nums'],
   },
   tripDay: {
-    color: '#475467',
-    fontSize: 13,
-  },
-  empty: {
-    textAlign: 'center',
-    color: '#98a2b3',
-    marginTop: 8,
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
   },
 });

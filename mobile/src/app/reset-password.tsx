@@ -1,17 +1,12 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-} from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text } from 'react-native';
 
+import { Button } from '@/components/Button';
+import { ErrorText } from '@/components/ErrorText';
+import { FormInput } from '@/components/FormInput';
 import { supabase } from '@/lib/supabase';
+import { colors, fontSize, spacing } from '@/lib/theme';
 
 /**
  * Deep-link target of the recovery email (transportflow://reset-password?code=…).
@@ -81,16 +76,14 @@ export default function ResetPasswordScreen() {
         </Text>
       ) : (
         <>
-          <TextInput
-            style={styles.input}
+          <FormInput
             placeholder="New password"
             autoComplete="new-password"
             secureTextEntry
             value={password}
             onChangeText={setPassword}
           />
-          <TextInput
-            style={styles.input}
+          <FormInput
             placeholder="Repeat new password"
             autoComplete="new-password"
             secureTextEntry
@@ -99,19 +92,14 @@ export default function ResetPasswordScreen() {
             onSubmitEditing={() => canSubmit && submit()}
           />
 
-          {error && <Text style={styles.error}>{error}</Text>}
+          {error && <ErrorText>{error}</ErrorText>}
 
-          <Pressable
-            style={[styles.button, !canSubmit && styles.buttonDisabled]}
-            disabled={!canSubmit}
+          <Button
+            label="Set new password"
             onPress={submit}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Set new password</Text>
-            )}
-          </Pressable>
+            disabled={!canSubmit}
+            loading={submitting}
+          />
         </>
       )}
     </KeyboardAvoidingView>
@@ -122,44 +110,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-    backgroundColor: '#fff',
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: colors.surface,
   },
   title: {
-    fontSize: 28,
+    fontSize: fontSize.xxl,
     fontWeight: '700',
-    marginBottom: 4,
+    color: colors.text,
+    marginBottom: spacing.xs,
   },
   hint: {
-    color: '#475467',
-    fontSize: 15,
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
     lineHeight: 21,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d0d5dd',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  error: {
-    color: '#d92d20',
-  },
-  button: {
-    backgroundColor: '#175cd3',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

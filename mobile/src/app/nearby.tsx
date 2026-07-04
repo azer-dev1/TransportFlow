@@ -1,16 +1,16 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
 import { Link } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { Chip } from '@/components/Chip';
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorText } from '@/components/ErrorText';
 import { supabase } from '@/lib/supabase';
+import { colors, fontSize, spacing } from '@/lib/theme';
 
 type NearbyStop = {
   id: string;
@@ -104,9 +104,7 @@ export default function NearbyScreen() {
           Location permission is needed to find nearby stops. Enable it in your device settings,
           then try again.
         </Text>
-        <Pressable style={styles.retry} onPress={reload}>
-          <Text style={styles.retryText}>Try again</Text>
-        </Pressable>
+        <Button label="Try again" onPress={reload} />
       </View>
     );
   }
@@ -114,10 +112,8 @@ export default function NearbyScreen() {
   if (status === 'error') {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>Couldn't load nearby stops: {error}</Text>
-        <Pressable style={styles.retry} onPress={reload}>
-          <Text style={styles.retryText}>Try again</Text>
-        </Pressable>
+        <ErrorText style={styles.centerError}>Couldn't load nearby stops: {error}</ErrorText>
+        <Button label="Try again" onPress={reload} />
       </View>
     );
   }
@@ -129,27 +125,24 @@ export default function NearbyScreen() {
       keyExtractor={(stop) => stop.id}
       contentContainerStyle={styles.list}
       renderItem={({ item }) => (
-        <View style={styles.stopCard}>
+        <Card style={styles.stopCard}>
           <View style={styles.stopHeader}>
-            <Text style={styles.stopName}>🚏 {item.name}</Text>
+            <Ionicons name="location-outline" size={18} color={colors.primary} />
+            <Text style={styles.stopName}>{item.name}</Text>
             <Text style={styles.distance}>{formatDistance(item.distance_m)}</Text>
           </View>
           {item.lines.length > 0 && (
             <View style={styles.chips}>
               {item.lines.map((l) => (
                 <Link key={l.id} href={`/lines/${l.id}`} asChild>
-                  <Pressable style={styles.chip}>
-                    <Text style={styles.chipText}>{l.name}</Text>
-                  </Pressable>
+                  <Chip label={l.name} />
                 </Link>
               ))}
             </View>
           )}
-        </View>
+        </Card>
       )}
-      ListEmptyComponent={
-        <Text style={styles.empty}>No stops within 3 km of your location.</Text>
-      }
+      ListEmptyComponent={<EmptyState>No stops within 3 km of your location.</EmptyState>}
     />
   );
 }
@@ -157,83 +150,50 @@ export default function NearbyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bg,
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
-    gap: 16,
-    backgroundColor: '#f8fafc',
+    gap: spacing.lg,
+    backgroundColor: colors.bg,
   },
   centerText: {
     textAlign: 'center',
-    color: '#475467',
-    fontSize: 15,
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
     lineHeight: 21,
   },
-  error: {
+  centerError: {
     textAlign: 'center',
-    color: '#d92d20',
-  },
-  retry: {
-    backgroundColor: '#175cd3',
-    borderRadius: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-  },
-  retryText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
   },
   list: {
-    padding: 16,
+    padding: spacing.lg,
     gap: 10,
   },
   stopCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#eaecf0',
-    padding: 16,
     gap: 10,
   },
   stopHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
+    gap: spacing.sm,
   },
   stopName: {
-    fontSize: 15,
+    fontSize: fontSize.sm,
     fontWeight: '600',
+    color: colors.text,
     flex: 1,
   },
   distance: {
-    color: '#475467',
+    color: colors.textMuted,
     fontVariant: ['tabular-nums'],
   },
   chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    backgroundColor: '#eff8ff',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
-  chipText: {
-    color: '#175cd3',
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  empty: {
-    textAlign: 'center',
-    color: '#98a2b3',
-    marginTop: 32,
+    gap: spacing.sm,
   },
 });

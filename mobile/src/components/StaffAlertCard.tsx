@@ -1,8 +1,13 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput } from 'react-native';
 
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { ErrorText } from '@/components/ErrorText';
+import { PillSelect } from '@/components/PillSelect';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
+import { colors, fontSize, radii, spacing } from '@/lib/theme';
 
 const SEVERITIES = [
   { value: 'info', label: 'Info' },
@@ -54,30 +59,22 @@ export function StaffAlertCard({ lineId, onPosted }: { lineId: string; onPosted?
   }
 
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <Text style={styles.title}>Post service alert</Text>
 
-      <View style={styles.pills}>
-        {SEVERITIES.map((s) => (
-          <Pressable
-            key={s.value}
-            style={[styles.pill, severity === s.value && styles.pillActive]}
-            onPress={() => {
-              setSeverity(s.value);
-              setPosted(false);
-            }}
-          >
-            <Text style={[styles.pillText, severity === s.value && styles.pillTextActive]}>
-              {s.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <PillSelect
+        options={SEVERITIES}
+        value={severity}
+        onChange={(s) => {
+          setSeverity(s);
+          setPosted(false);
+        }}
+      />
 
       <TextInput
         style={styles.input}
         placeholder="Title (e.g. Strike this Friday)"
-        placeholderTextColor="#98a2b3"
+        placeholderTextColor={colors.textFaint}
         value={title}
         onChangeText={setTitle}
         maxLength={120}
@@ -85,96 +82,45 @@ export function StaffAlertCard({ lineId, onPosted }: { lineId: string; onPosted?
       <TextInput
         style={[styles.input, styles.bodyInput]}
         placeholder="Details for riders"
-        placeholderTextColor="#98a2b3"
+        placeholderTextColor={colors.textFaint}
         value={body}
         onChangeText={setBody}
         multiline
         maxLength={500}
       />
 
-      {error && <Text style={styles.error}>Alert failed: {error}</Text>}
+      {error && <ErrorText>Alert failed: {error}</ErrorText>}
       {posted && !error && <Text style={styles.success}>Posted — riders are being notified.</Text>}
 
-      <Pressable
-        style={[styles.button, !canSubmit && styles.buttonDisabled]}
-        disabled={!canSubmit}
-        onPress={submit}
-      >
-        {submitting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Post alert</Text>
-        )}
-      </Pressable>
-    </View>
+      <Button label="Post alert" onPress={submit} disabled={!canSubmit} loading={submitting} />
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#fec84b',
-    padding: 16,
-    gap: 12,
+    // Amber border marks the staff-only surface.
+    borderColor: colors.warningBorder,
+    gap: spacing.md,
   },
   title: {
-    fontSize: 16,
+    fontSize: fontSize.md,
     fontWeight: '700',
-  },
-  pills: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  pill: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#d0d5dd',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  pillActive: {
-    backgroundColor: '#175cd3',
-    borderColor: '#175cd3',
-  },
-  pillText: {
-    fontWeight: '600',
-    color: '#344054',
-  },
-  pillTextActive: {
-    color: '#fff',
+    color: colors.text,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#d0d5dd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
-    fontSize: 15,
+    fontSize: fontSize.sm,
   },
   bodyInput: {
     minHeight: 64,
     textAlignVertical: 'top',
   },
-  error: {
-    color: '#d92d20',
-  },
   success: {
-    color: '#067647',
-  },
-  button: {
-    backgroundColor: '#175cd3',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
+    color: colors.success,
   },
 });

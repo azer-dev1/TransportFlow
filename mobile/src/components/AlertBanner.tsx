@@ -1,9 +1,30 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Text, View } from 'react-native';
 
-const SEVERITY_STYLES: Record<string, { icon: string; fg: string; bg: string; border: string }> = {
-  info: { icon: 'ℹ️', fg: '#175cd3', bg: '#eff8ff', border: '#84caff' },
-  warning: { icon: '⚠️', fg: '#b54708', bg: '#fffaeb', border: '#fec84b' },
-  disruption: { icon: '⛔', fg: '#d92d20', bg: '#fef3f2', border: '#fda29b' },
+import { colors, fontSize, radii, spacing } from '@/lib/theme';
+
+const SEVERITY_STYLES: Record<
+  string,
+  { icon: keyof typeof Ionicons.glyphMap; fg: string; bg: string; border: string }
+> = {
+  info: {
+    icon: 'information-circle',
+    fg: colors.primary,
+    bg: colors.primarySurface,
+    border: colors.unreadBorder,
+  },
+  warning: {
+    icon: 'warning',
+    fg: colors.warning,
+    bg: colors.warningSurface,
+    border: colors.warningBorder,
+  },
+  disruption: {
+    icon: 'alert-circle',
+    fg: colors.danger,
+    bg: colors.dangerSurface,
+    border: colors.dangerBorder,
+  },
 };
 
 export function AlertBanner({
@@ -18,7 +39,7 @@ export function AlertBanner({
   const s = SEVERITY_STYLES[severity] ?? SEVERITY_STYLES.info;
   return (
     <View style={[styles.banner, { backgroundColor: s.bg, borderColor: s.border }]}>
-      <Text style={styles.icon}>{s.icon}</Text>
+      <Ionicons name={s.icon} size={20} color={s.fg} />
       <View style={styles.body}>
         <Text style={[styles.title, { color: s.fg }]}>{title}</Text>
         {!!body && <Text style={styles.text}>{body}</Text>}
@@ -30,24 +51,21 @@ export function AlertBanner({
 const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row',
-    gap: 10,
-    borderRadius: 12,
+    gap: spacing.md - 2,
+    borderRadius: radii.lg,
     borderWidth: 1,
     padding: 14,
   },
-  icon: {
-    fontSize: 18,
-  },
   body: {
     flex: 1,
-    gap: 4,
+    gap: spacing.xs,
   },
   title: {
-    fontSize: 15,
+    fontSize: fontSize.sm,
     fontWeight: '700',
   },
   text: {
-    color: '#344054',
+    color: colors.textBody,
     lineHeight: 19,
   },
 });

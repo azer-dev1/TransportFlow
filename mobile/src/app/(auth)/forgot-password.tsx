@@ -1,15 +1,11 @@
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text } from 'react-native';
 
+import { Button } from '@/components/Button';
+import { ErrorText } from '@/components/ErrorText';
+import { FormInput } from '@/components/FormInput';
 import { supabase } from '@/lib/supabase';
+import { colors, fontSize, spacing } from '@/lib/theme';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -59,8 +55,7 @@ export default function ForgotPasswordScreen() {
         Enter your account email and we'll send you a link to reset it.
       </Text>
 
-      <TextInput
-        style={styles.input}
+      <FormInput
         placeholder="Email"
         autoCapitalize="none"
         autoComplete="email"
@@ -70,19 +65,14 @@ export default function ForgotPasswordScreen() {
         onSubmitEditing={() => canSubmit && sendResetEmail()}
       />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <ErrorText>{error}</ErrorText>}
 
-      <Pressable
-        style={[styles.button, !canSubmit && styles.buttonDisabled]}
-        disabled={!canSubmit}
+      <Button
+        label="Send reset link"
         onPress={sendResetEmail}
-      >
-        {submitting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Send reset link</Text>
-        )}
-      </Pressable>
+        disabled={!canSubmit}
+        loading={submitting}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -91,45 +81,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-    backgroundColor: '#fff',
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: colors.surface,
   },
   title: {
-    fontSize: 28,
+    fontSize: fontSize.xxl,
     fontWeight: '700',
-    marginBottom: 4,
+    color: colors.text,
+    marginBottom: spacing.xs,
   },
   hint: {
-    color: '#475467',
-    fontSize: 15,
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
     lineHeight: 21,
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d0d5dd',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  error: {
-    color: '#d92d20',
-  },
-  button: {
-    backgroundColor: '#175cd3',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    marginBottom: spacing.sm,
   },
 });

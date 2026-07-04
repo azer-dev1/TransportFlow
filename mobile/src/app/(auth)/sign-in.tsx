@@ -1,17 +1,12 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 
+import { Button } from '@/components/Button';
+import { ErrorText } from '@/components/ErrorText';
+import { FormInput } from '@/components/FormInput';
 import { supabase } from '@/lib/supabase';
+import { colors, fontSize, spacing } from '@/lib/theme';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
@@ -43,8 +38,7 @@ export default function SignInScreen() {
     >
       <Text style={styles.title}>Welcome back</Text>
 
-      <TextInput
-        style={styles.input}
+      <FormInput
         placeholder="Email"
         autoCapitalize="none"
         autoComplete="email"
@@ -52,8 +46,7 @@ export default function SignInScreen() {
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput
-        style={styles.input}
+      <FormInput
         placeholder="Password"
         autoComplete="current-password"
         secureTextEntry
@@ -62,23 +55,13 @@ export default function SignInScreen() {
         onSubmitEditing={() => canSubmit && signIn()}
       />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <ErrorText>{error}</ErrorText>}
 
       <Link href="/forgot-password" style={styles.forgotLink}>
         Forgot password?
       </Link>
 
-      <Pressable
-        style={[styles.button, !canSubmit && styles.buttonDisabled]}
-        disabled={!canSubmit}
-        onPress={signIn}
-      >
-        {submitting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Sign in</Text>
-        )}
-      </Pressable>
+      <Button label="Sign in" onPress={signIn} disabled={!canSubmit} loading={submitting} />
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>No account yet? </Text>
@@ -94,56 +77,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-    backgroundColor: '#fff',
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: colors.surface,
   },
   title: {
-    fontSize: 28,
+    fontSize: fontSize.xxl,
     fontWeight: '700',
-    marginBottom: 12,
+    color: colors.text,
+    marginBottom: spacing.md,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d0d5dd',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  error: {
-    color: '#d92d20',
-  },
-  button: {
-    backgroundColor: '#175cd3',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
+  forgotLink: {
+    color: colors.primary,
     fontWeight: '600',
+    alignSelf: 'flex-end',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: spacing.lg,
   },
   footerText: {
-    color: '#475467',
+    color: colors.textMuted,
   },
   footerLink: {
-    color: '#175cd3',
+    color: colors.primary,
     fontWeight: '600',
-  },
-  forgotLink: {
-    color: '#175cd3',
-    fontWeight: '600',
-    alignSelf: 'flex-end',
   },
 });
