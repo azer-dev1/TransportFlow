@@ -130,10 +130,12 @@ for (const list of timesByTrip.values()) {
   list.sort((a, b) => Number(a.stop_sequence) - Number(b.stop_sequence));
 }
 
-// "HH:MM:SS", hours may exceed 23 (after-midnight service) -> total minutes
+// "HH:MM:SS", hours may exceed 23 (after-midnight service) -> total minutes.
+// Blank/malformed times (GTFS allows empty times on non-timepoint stops)
+// return null; note Number("") is 0, so a regex gate is required.
 function toMinutes(hms) {
-  const [h, m] = (hms ?? "").split(":").map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  if (!/^\d+:\d+(:\d+)?$/.test(hms ?? "")) return null;
+  const [h, m] = hms.split(":").map(Number);
   return h * 60 + m;
 }
 
@@ -173,10 +175,24 @@ for (const route of routes) {
   const rep = timesByTrip.get(groupTrips[0].trip_id);
   const t0 = toMinutes(rep[0].departure_time || rep[0].arrival_time);
   if (t0 === null) continue;
+  // Untimed stops (blank times, timepoint=0) get linearly interpolated
+  // arrival times between the surrounding timed stops, per GTFS semantics.
+  const absTimes = rep.map((st) => toMinutes(st.arrival_time || st.departure_time));
+  absTimes[0] ??= t0;
+  for (let i = 1; i < absTimes.length; i++) {
+    if (absTimes[i] !== null) continue;
+    let j = i;
+    while (j < absTimes.length && absTimes[j] === null) j++;
+    const prev = absTimes[i - 1];
+    const next = j < absTimes.length ? absTimes[j] : prev;
+    const span = j - (i - 1);
+    for (let k = i; k < j; k++) absTimes[k] = Math.round(prev + ((next - prev) * (k - (i - 1))) / span);
+    i = j;
+  }
   const lineStops = rep.map((st, i) => ({
     stopId: st.stop_id,
     seq: i + 1,
-    offset: Math.max(0, (toMinutes(st.arrival_time || st.departure_time) ?? t0) - t0),
+    offset: Math.max(0, absTimes[i] - t0),
   }));
 
   // Departure patterns from every trip of the dominant sequence: first-stop

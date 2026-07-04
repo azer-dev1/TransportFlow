@@ -33,9 +33,20 @@ Idempotent: ids are md5-derived from GTFS ids, so re-running upserts in place;
 `service_patterns` are replaced wholesale per imported line. To switch cities,
 just run it again with another feed (old lines stay unless you delete them).
 
-The currently imported feed is **Mouv'enbus** (CA Provence Verte, France) —
-[dataset](https://transport.data.gouv.fr/datasets/reseau-transport-mouv-enbus-agglomeration-provence-verte),
-Licence Ouverte v2.0.
+The currently imported feeds (2026-07-04) are Tunisian, from the Ministry of
+Transport's open-data portal ([catalogue-data.transport.tn](https://catalogue-data.transport.tn)):
+
+| prefix     | feed                                   | imported                 |
+| ---------- | -------------------------------------- | ------------------------ |
+| `transtu`  | TRANSTU (Tunis métro léger 1 + TGM)    | 3 lines / 31 stops       |
+| `soretrak` | SORETRAK (Kairouan buses)              | 34 lines / 189 stops     |
+| `sntri`    | SNTRI (intercity coaches)              | 23 lines / 157 stops     |
+
+Not imported: STS Sahel (published as UTF-16 tab-separated RAR, not real GTFS),
+SNCFT (dataset exists but no files uploaded). The TRANSTU feed is a 2019 pilot —
+métro lines 2–6 and the bus network are absent, and its two schedule-less routes
+(ligne2, ligne28) are dropped automatically. SORETRAK also publishes GTFS-Realtime,
+unused so far.
 
 ## What gets lost in translation
 
