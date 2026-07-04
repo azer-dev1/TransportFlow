@@ -358,7 +358,11 @@ function UpdatesCard() {
       }
       setStatus('Downloading update…');
       await Updates.fetchUpdateAsync();
-      await Updates.reloadAsync();
+      // No reloadAsync: on Android it races the React root remount and can
+      // freeze on a gray screen (expo/expo#19213). A fetched update applies
+      // itself on the next cold start, so just ask for a restart.
+      setStatus('Update downloaded — close and reopen the app to apply it.');
+      setBusy(false);
     } catch (err) {
       setStatus(`Update check failed: ${err instanceof Error ? err.message : String(err)}`);
       setBusy(false);
