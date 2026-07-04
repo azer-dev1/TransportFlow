@@ -2,7 +2,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useRef } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,6 +14,7 @@ import { ErrorText } from '@/components/ErrorText';
 import { ModeIcon } from '@/components/ModeIcon';
 import { Row, RowView } from '@/components/Row';
 import { SectionTitle } from '@/components/SectionTitle';
+import { Spinner } from '@/components/Spinner';
 import { Star } from '@/components/Star';
 import { colors, fontSize, spacing } from '@/lib/theme';
 import { useFavorites } from '@/lib/use-favorites';
@@ -73,7 +73,7 @@ export default function FavoritesScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refetch} />}
     >
-      {isLoading && <ActivityIndicator style={styles.spinner} />}
+      {isLoading && <Spinner style={styles.spinner} />}
       {error && <ErrorText>Favorites failed to load: {error}</ErrorText>}
       {mutationError && <ErrorText>Change failed: {mutationError}</ErrorText>}
 

@@ -2,7 +2,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
@@ -17,6 +16,7 @@ import { ErrorText } from '@/components/ErrorText';
 import { ModeIcon } from '@/components/ModeIcon';
 import { Row } from '@/components/Row';
 import { SectionTitle } from '@/components/SectionTitle';
+import { Spinner } from '@/components/Spinner';
 import { supabase } from '@/lib/supabase';
 import { colors, fontSize, radii, spacing } from '@/lib/theme';
 import { useSupabaseQuery } from '@/lib/use-supabase-query';
@@ -122,7 +122,7 @@ export default function LinesScreen() {
         </Row>
       </Link>
 
-      {isLoading && <ActivityIndicator style={styles.spinner} />}
+      {isLoading && <Spinner style={styles.spinner} />}
       {error && <ErrorText style={styles.errorPadded}>Lines failed to load: {error}</ErrorText>}
 
       {results ? (
@@ -131,7 +131,7 @@ export default function LinesScreen() {
           keyExtractor={(line) => line.id}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
-            searching ? <ActivityIndicator style={styles.spinner} /> : (
+            searching ? <Spinner style={styles.spinner} /> : (
               <SectionTitle>Lines</SectionTitle>
             )
           }

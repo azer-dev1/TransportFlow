@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { usePushNotifications } from '@/lib/notifications';
+import { colors } from '@/lib/theme';
 
 function RootNavigator() {
   const { session, isLoading } = useAuth();
@@ -11,10 +12,18 @@ function RootNavigator() {
 
   if (isLoading) {
     // Hold rendering until the persisted session is restored so signed-in
-    // users don't flash through the sign-in screen on cold start.
+    // users don't flash through the sign-in screen on cold start. Brand blue
+    // to read as a continuation of the splash screen.
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator />
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.primary,
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.onPrimary} />
       </View>
     );
   }

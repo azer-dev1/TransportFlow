@@ -1,7 +1,6 @@
 import * as Updates from 'expo-updates';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -15,6 +14,7 @@ import {
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ErrorText } from '@/components/ErrorText';
+import { Spinner } from '@/components/Spinner';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { colors, fontSize, radii, spacing } from '@/lib/theme';
@@ -86,7 +86,7 @@ function QuietHoursCard({ userId }: { userId: string }) {
     }
   }
 
-  if (loading) return <ActivityIndicator style={styles.spinner} />;
+  if (loading) return <Spinner style={styles.spinner} />;
 
   return (
     <Card>

@@ -1,10 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorText } from '@/components/ErrorText';
+import { Spinner } from '@/components/Spinner';
 import { colors, fontSize, radii, spacing } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { useSupabaseQuery } from '@/lib/use-supabase-query';
@@ -61,7 +62,7 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      {isLoading && <ActivityIndicator style={styles.spinner} />}
+      {isLoading && <Spinner style={styles.spinner} />}
       {error && <ErrorText style={styles.errorPadded}>Notifications failed to load: {error}</ErrorText>}
 
       <FlatList

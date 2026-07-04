@@ -2,13 +2,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
 import { Link } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorText } from '@/components/ErrorText';
+import { Spinner } from '@/components/Spinner';
 import { StopsMap } from '@/components/StopsMap';
 import { supabase } from '@/lib/supabase';
 import { colors, fontSize, spacing } from '@/lib/theme';
@@ -96,7 +97,7 @@ export default function NearbyScreen() {
   if (status === 'loading') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
+        <Spinner />
         <Text style={styles.centerText}>Finding stops near you…</Text>
       </View>
     );

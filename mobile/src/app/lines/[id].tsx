@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { AlertBanner } from '@/components/AlertBanner';
 import { Card } from '@/components/Card';
@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorText } from '@/components/ErrorText';
 import { Row } from '@/components/Row';
 import { SectionTitle } from '@/components/SectionTitle';
+import { Spinner } from '@/components/Spinner';
 import { StaffAlertCard } from '@/components/StaffAlertCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Star } from '@/components/Star';
@@ -156,7 +157,7 @@ export default function LineDetailScreen() {
             </Card>
 
             <SectionTitle style={styles.sectionTitle}>Upcoming departures</SectionTitle>
-            {tripsLoading && <ActivityIndicator style={styles.spinner} />}
+            {tripsLoading && <Spinner style={styles.spinner} />}
             {tripsError && <ErrorText>Schedule failed to load: {tripsError}</ErrorText>}
           </View>
         }

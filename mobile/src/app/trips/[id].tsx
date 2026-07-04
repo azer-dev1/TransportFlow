@@ -1,11 +1,12 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorText } from '@/components/ErrorText';
 import { SectionTitle } from '@/components/SectionTitle';
+import { Spinner } from '@/components/Spinner';
 import { StaffReportCard } from '@/components/StaffReportCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { supabase } from '@/lib/supabase';
@@ -96,7 +97,7 @@ export default function TripDetailScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ title: trip?.lines?.name ?? 'Trip' }} />
 
-      {tripLoading && <ActivityIndicator style={styles.spinner} />}
+      {tripLoading && <Spinner style={styles.spinner} />}
       {tripError && <ErrorText style={styles.errorPadded}>Trip failed to load: {tripError}</ErrorText>}
 
       {trip && (
