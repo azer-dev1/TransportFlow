@@ -22,11 +22,8 @@ function RootNavigator() {
   return (
     <Stack>
       <Stack.Protected guard={!!session}>
-        <Stack.Screen name="index" options={{ title: 'Lines' }} />
-        <Stack.Screen name="profile" options={{ title: 'Profile' }} />
-        <Stack.Screen name="favorites" options={{ title: 'My favorites' }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="nearby" options={{ title: 'Nearby stops' }} />
-        <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
         <Stack.Screen name="lines/[id]" options={{ title: 'Line' }} />
         <Stack.Screen name="trips/[id]" options={{ title: 'Trip' }} />
       </Stack.Protected>

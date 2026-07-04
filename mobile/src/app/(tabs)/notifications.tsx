@@ -1,7 +1,11 @@
-import { Link } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Link, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorText } from '@/components/ErrorText';
+import { colors, fontSize, radii, spacing } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { useSupabaseQuery } from '@/lib/use-supabase-query';
 
@@ -27,13 +31,25 @@ export default function NotificationsScreen() {
     [],
   );
 
-  // Mark everything read once the list has loaded — but only once, so the
-  // unread styling stays visible for this visit (the badge elsewhere
-  // updates via realtime; a refetch here would wipe the highlights).
-  const marked = useRef(false);
+  // The tab stays mounted, so refresh on every re-focus (mount covers the
+  // first one). The mark-read effect below then clears the badge while the
+  // unread styling stays visible until the next refetch.
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      refetch();
+    }, [refetch]),
+  );
+
+  // Whenever the list contains unread rows, mark them read in the DB (the
+  // tab badge updates via realtime). The local rows keep their unread look
+  // for this visit because we deliberately don't refetch here.
   useEffect(() => {
-    if (marked.current || !notifications?.some((n) => !n.read_at)) return;
-    marked.current = true;
+    if (!notifications?.some((n) => !n.read_at)) return;
     supabase
       .from('notifications')
       .update({ read_at: new Date().toISOString() })
@@ -46,7 +62,7 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.container}>
       {isLoading && <ActivityIndicator style={styles.spinner} />}
-      {error && <Text style={styles.error}>Notifications failed to load: {error}</Text>}
+      {error && <ErrorText style={styles.errorPadded}>Notifications failed to load: {error}</ErrorText>}
 
       <FlatList
         data={notifications ?? []}
@@ -64,7 +80,9 @@ export default function NotificationsScreen() {
                 </Text>
                 <Text style={styles.meta}>{formatWhen(n.sent_at)}</Text>
               </View>
-              {n.trip_id && <Text style={styles.chevron}>›</Text>}
+              {n.trip_id && (
+                <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+              )}
             </View>
           );
           return n.trip_id ? (
@@ -77,10 +95,10 @@ export default function NotificationsScreen() {
         }}
         ListEmptyComponent={
           !isLoading && !error ? (
-            <Text style={styles.empty}>
+            <EmptyState>
               No notifications yet. Star a line or stop and you'll hear about its delays,
               cancellations, and service alerts here.
-            </Text>
+            </EmptyState>
           ) : null
         }
       />
@@ -91,65 +109,53 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bg,
   },
   spinner: {
     marginTop: 32,
   },
-  error: {
-    color: '#d92d20',
-    padding: 16,
+  errorPadded: {
+    padding: spacing.lg,
   },
   list: {
-    padding: 16,
+    padding: spacing.lg,
     gap: 10,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: '#eaecf0',
-    padding: 16,
+    borderColor: colors.border,
+    padding: spacing.lg,
   },
   rowUnread: {
-    borderColor: '#84caff',
-    backgroundColor: '#f5faff',
+    borderColor: colors.unreadBorder,
+    backgroundColor: colors.unreadSurface,
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#175cd3',
+    backgroundColor: colors.primary,
   },
   rowBody: {
     flex: 1,
-    gap: 4,
+    gap: spacing.xs,
   },
   message: {
-    fontSize: 15,
-    color: '#344054',
+    fontSize: fontSize.sm,
+    color: colors.textBody,
     lineHeight: 20,
   },
   messageUnread: {
     fontWeight: '600',
-    color: '#101828',
+    color: colors.text,
   },
   meta: {
-    color: '#98a2b3',
-    fontSize: 13,
-  },
-  chevron: {
-    fontSize: 22,
-    color: '#98a2b3',
-  },
-  empty: {
-    textAlign: 'center',
-    color: '#98a2b3',
-    marginTop: 48,
-    paddingHorizontal: 24,
-    lineHeight: 20,
+    color: colors.textFaint,
+    fontSize: fontSize.xs,
   },
 });

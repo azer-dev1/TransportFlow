@@ -1,17 +1,12 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 
+import { Button } from '@/components/Button';
+import { ErrorText } from '@/components/ErrorText';
+import { FormInput } from '@/components/FormInput';
 import { supabase } from '@/lib/supabase';
+import { colors, fontSize, spacing } from '@/lib/theme';
 
 export default function SignUpScreen() {
   const [fullName, setFullName] = useState('');
@@ -45,15 +40,13 @@ export default function SignUpScreen() {
     >
       <Text style={styles.title}>Create your account</Text>
 
-      <TextInput
-        style={styles.input}
+      <FormInput
         placeholder="Full name"
         autoComplete="name"
         value={fullName}
         onChangeText={setFullName}
       />
-      <TextInput
-        style={styles.input}
+      <FormInput
         placeholder="Email"
         autoCapitalize="none"
         autoComplete="email"
@@ -61,8 +54,7 @@ export default function SignUpScreen() {
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput
-        style={styles.input}
+      <FormInput
         placeholder="Password (min 6 characters)"
         autoComplete="new-password"
         secureTextEntry
@@ -71,19 +63,14 @@ export default function SignUpScreen() {
         onSubmitEditing={() => canSubmit && signUp()}
       />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <ErrorText>{error}</ErrorText>}
 
-      <Pressable
-        style={[styles.button, !canSubmit && styles.buttonDisabled]}
-        disabled={!canSubmit}
+      <Button
+        label="Create account"
         onPress={signUp}
-      >
-        {submitting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Create account</Text>
-        )}
-      </Pressable>
+        disabled={!canSubmit}
+        loading={submitting}
+      />
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>Already have an account? </Text>
@@ -99,51 +86,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-    backgroundColor: '#fff',
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: colors.surface,
   },
   title: {
-    fontSize: 28,
+    fontSize: fontSize.xxl,
     fontWeight: '700',
-    marginBottom: 12,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d0d5dd',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  error: {
-    color: '#d92d20',
-  },
-  button: {
-    backgroundColor: '#175cd3',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.md,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: spacing.lg,
   },
   footerText: {
-    color: '#475467',
+    color: colors.textMuted,
   },
   footerLink: {
-    color: '#175cd3',
+    color: colors.primary,
     fontWeight: '600',
   },
 });

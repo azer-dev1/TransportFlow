@@ -11,8 +11,12 @@ import {
   View,
 } from 'react-native';
 
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { ErrorText } from '@/components/ErrorText';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
+import { colors, fontSize, radii, spacing } from '@/lib/theme';
 
 const TIME_RE = /^([01]?\d|2[0-3]):[0-5]\d$/;
 
@@ -84,7 +88,7 @@ function QuietHoursCard({ userId }: { userId: string }) {
   if (loading) return <ActivityIndicator style={styles.spinner} />;
 
   return (
-    <View style={styles.card}>
+    <Card>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>Quiet hours</Text>
         <Switch value={enabled} onValueChange={toggle} />
@@ -127,23 +131,19 @@ function QuietHoursCard({ userId }: { userId: string }) {
             </View>
           </View>
 
-          {error && <Text style={styles.error}>Saving failed: {error}</Text>}
+          {error && <ErrorText>Saving failed: {error}</ErrorText>}
           {saved && !error && <Text style={styles.success}>Quiet hours saved.</Text>}
 
-          <Pressable
-            style={[styles.saveButton, (!valid || saving) && styles.saveButtonDisabled]}
-            disabled={!valid || saving}
+          <Button
+            label="Save quiet hours"
             onPress={save}
-          >
-            {saving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.saveButtonText}>Save quiet hours</Text>
-            )}
-          </Pressable>
+            disabled={!valid}
+            loading={saving}
+            style={styles.saveButton}
+          />
         </>
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -198,22 +198,18 @@ function NameEditor({ currentName, onSaved }: { currentName: string; onSaved: ()
         placeholder="Your name"
         onSubmitEditing={() => canSave && save()}
       />
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <ErrorText>{error}</ErrorText>}
       <View style={styles.nameEditActions}>
         <Pressable onPress={() => setEditing(false)}>
           <Text style={styles.cancelLink}>Cancel</Text>
         </Pressable>
-        <Pressable
-          style={[styles.saveButton, styles.saveButtonInline, !canSave && styles.saveButtonDisabled]}
-          disabled={!canSave}
+        <Button
+          label="Save"
           onPress={save}
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save</Text>
-          )}
-        </Pressable>
+          disabled={!canSave}
+          loading={saving}
+          style={styles.saveButtonInline}
+        />
       </View>
     </View>
   );
@@ -254,7 +250,7 @@ function ChangePasswordCard() {
   const canSave = password.length > 0 && confirm.length > 0 && !saving;
 
   return (
-    <View style={styles.card}>
+    <Card>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>Password</Text>
         <Pressable onPress={() => setOpen(!open)}>
@@ -282,21 +278,17 @@ function ChangePasswordCard() {
             onChangeText={setConfirm}
             onSubmitEditing={() => canSave && save()}
           />
-          {error && <Text style={styles.error}>{error}</Text>}
-          <Pressable
-            style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
-            disabled={!canSave}
+          {error && <ErrorText>{error}</ErrorText>}
+          <Button
+            label="Update password"
             onPress={save}
-          >
-            {saving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.saveButtonText}>Update password</Text>
-            )}
-          </Pressable>
+            disabled={!canSave}
+            loading={saving}
+            style={styles.saveButton}
+          />
         </>
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -332,13 +324,12 @@ function DeleteAccountButton() {
   }
 
   return (
-    <Pressable style={styles.deleteAccount} disabled={deleting} onPress={confirmDelete}>
-      {deleting ? (
-        <ActivityIndicator color="#d92d20" />
-      ) : (
-        <Text style={styles.deleteAccountText}>Delete account</Text>
-      )}
-    </Pressable>
+    <Button
+      label="Delete account"
+      variant="danger-ghost"
+      onPress={confirmDelete}
+      loading={deleting}
+    />
   );
 }
 
@@ -347,7 +338,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.card}>
+      <Card>
         {profile ? (
           <NameEditor currentName={profile.full_name} onSaved={refreshProfile} />
         ) : (
@@ -359,17 +350,16 @@ export default function ProfileScreen() {
           </View>
         )}
         <Text style={styles.email}>{session?.user.email}</Text>
-      </View>
+      </Card>
 
       <ChangePasswordCard />
 
       {session && <QuietHoursCard userId={session.user.id} />}
 
-      <Pressable style={styles.signOut} onPress={() => supabase.auth.signOut()}>
-        <Text style={styles.signOutText}>Sign out</Text>
-      </Pressable>
-
-      <DeleteAccountButton />
+      <View style={styles.footer}>
+        <Button label="Sign out" variant="outline" onPress={() => supabase.auth.signOut()} />
+        <DeleteAccountButton />
+      </View>
     </ScrollView>
   );
 }
@@ -377,20 +367,12 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bg,
   },
   content: {
-    padding: 24,
-    gap: 24,
+    padding: spacing.xl,
+    gap: spacing.xl,
     flexGrow: 1,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#eaecf0',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -400,15 +382,17 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 17,
     fontWeight: '700',
+    color: colors.text,
   },
   cardHint: {
-    color: '#475467',
-    fontSize: 13,
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
     lineHeight: 18,
   },
   greeting: {
-    fontSize: 22,
+    fontSize: fontSize.xl,
     fontWeight: '700',
+    color: colors.text,
   },
   nameRow: {
     flexDirection: 'row',
@@ -416,124 +400,89 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   nameEdit: {
-    gap: 8,
+    gap: spacing.sm,
   },
   nameEditActions: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: 16,
+    gap: spacing.lg,
   },
   editLink: {
-    color: '#175cd3',
+    color: colors.primary,
     fontWeight: '600',
   },
   cancelLink: {
-    color: '#475467',
+    color: colors.textMuted,
     fontWeight: '600',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#d0d5dd',
-    borderRadius: 8,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.sm,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    fontSize: 16,
+    fontSize: fontSize.md,
+  },
+  saveButton: {
+    marginTop: spacing.xs,
   },
   saveButtonInline: {
     paddingHorizontal: 20,
-    paddingVertical: 8,
-    marginTop: 0,
+    paddingVertical: spacing.sm,
   },
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#eff8ff',
-    borderRadius: 999,
+    backgroundColor: colors.primarySurface,
+    borderRadius: radii.pill,
     paddingHorizontal: 10,
     paddingVertical: 2,
   },
   badgeStaff: {
-    backgroundColor: '#fef0c7',
+    backgroundColor: colors.warningChip,
   },
   badgeText: {
-    fontSize: 13,
+    fontSize: fontSize.xs,
     fontWeight: '600',
-    color: '#344054',
+    color: colors.textBody,
   },
   email: {
-    color: '#475467',
+    color: colors.textMuted,
   },
   spinner: {
-    marginVertical: 8,
+    marginVertical: spacing.sm,
   },
   timesRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 4,
+    gap: spacing.md,
+    marginTop: spacing.xs,
   },
   timeField: {
     flex: 1,
-    gap: 4,
+    gap: spacing.xs,
   },
   timeLabel: {
-    color: '#475467',
-    fontSize: 13,
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
   },
   timeInput: {
     borderWidth: 1,
-    borderColor: '#d0d5dd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
-    fontSize: 16,
+    fontSize: fontSize.md,
     textAlign: 'center',
     fontVariant: ['tabular-nums'],
   },
   timeInputInvalid: {
-    borderColor: '#fda29b',
-  },
-  error: {
-    color: '#d92d20',
+    borderColor: colors.dangerBorder,
   },
   success: {
-    color: '#067647',
+    color: colors.success,
   },
-  saveButton: {
-    backgroundColor: '#175cd3',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  signOut: {
+  footer: {
     marginTop: 'auto',
-    borderWidth: 1,
-    borderColor: '#d0d5dd',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  signOutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#344054',
-  },
-  deleteAccount: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  deleteAccountText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#d92d20',
+    gap: spacing.sm,
   },
 });

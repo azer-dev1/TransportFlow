@@ -1,8 +1,13 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { ErrorText } from '@/components/ErrorText';
+import { PillSelect } from '@/components/PillSelect';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
+import { colors, fontSize, radii, spacing } from '@/lib/theme';
 
 const STATUSES = [
   { value: 'on_time', label: 'On time' },
@@ -46,25 +51,17 @@ export function StaffReportCard({ tripId }: { tripId: string }) {
   }
 
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <Text style={styles.title}>Report status</Text>
 
-      <View style={styles.pills}>
-        {STATUSES.map((s) => (
-          <Pressable
-            key={s.value}
-            style={[styles.pill, status === s.value && styles.pillActive]}
-            onPress={() => {
-              setStatus(s.value);
-              setSubmitted(false);
-            }}
-          >
-            <Text style={[styles.pillText, status === s.value && styles.pillTextActive]}>
-              {s.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <PillSelect
+        options={STATUSES}
+        value={status}
+        onChange={(s) => {
+          setStatus(s);
+          setSubmitted(false);
+        }}
+      />
 
       {status === 'delayed' && (
         <View style={styles.delayRow}>
@@ -79,58 +76,26 @@ export function StaffReportCard({ tripId }: { tripId: string }) {
         </View>
       )}
 
-      {error && <Text style={styles.error}>Report failed: {error}</Text>}
-      {submitted && !error && <Text style={styles.success}>Reported — riders are being notified.</Text>}
+      {error && <ErrorText>Report failed: {error}</ErrorText>}
+      {submitted && !error && (
+        <Text style={styles.success}>Reported — riders are being notified.</Text>
+      )}
 
-      <Pressable
-        style={[styles.button, !canSubmit && styles.buttonDisabled]}
-        disabled={!canSubmit}
-        onPress={submit}
-      >
-        {submitting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Submit report</Text>
-        )}
-      </Pressable>
-    </View>
+      <Button label="Submit report" onPress={submit} disabled={!canSubmit} loading={submitting} />
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#fec84b',
-    padding: 16,
-    gap: 12,
+    // Amber border marks the staff-only surface.
+    borderColor: colors.warningBorder,
+    gap: spacing.md,
   },
   title: {
-    fontSize: 16,
+    fontSize: fontSize.md,
     fontWeight: '700',
-  },
-  pills: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  pill: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#d0d5dd',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  pillActive: {
-    backgroundColor: '#175cd3',
-    borderColor: '#175cd3',
-  },
-  pillText: {
-    fontWeight: '600',
-    color: '#344054',
-  },
-  pillTextActive: {
-    color: '#fff',
+    color: colors.text,
   },
   delayRow: {
     flexDirection: 'row',
@@ -138,37 +103,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   delayLabel: {
-    color: '#475467',
+    color: colors.textMuted,
   },
   delayInput: {
     borderWidth: 1,
-    borderColor: '#d0d5dd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     minWidth: 72,
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: fontSize.md,
     fontVariant: ['tabular-nums'],
   },
-  error: {
-    color: '#d92d20',
-  },
   success: {
-    color: '#067647',
-  },
-  button: {
-    backgroundColor: '#175cd3',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
+    color: colors.success,
   },
 });

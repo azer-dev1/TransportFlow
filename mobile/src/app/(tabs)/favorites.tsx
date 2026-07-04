@@ -1,4 +1,6 @@
-import { Link } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Link, useFocusEffect } from 'expo-router';
+import { useCallback, useRef } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -6,13 +8,16 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
 } from 'react-native';
 
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorText } from '@/components/ErrorText';
+import { ModeIcon } from '@/components/ModeIcon';
+import { Row, RowView } from '@/components/Row';
+import { SectionTitle } from '@/components/SectionTitle';
 import { Star } from '@/components/Star';
+import { colors, fontSize, spacing } from '@/lib/theme';
 import { useFavorites } from '@/lib/use-favorites';
-
-const MODE_ICONS: Record<string, string> = { bus: '🚌', train: '🚆' };
 
 /** Bell toggle: muted favorites stay starred but never notify. */
 function MuteBell({ muted, onPress }: { muted: boolean; onPress: () => void }) {
@@ -23,7 +28,11 @@ function MuteBell({ muted, onPress }: { muted: boolean; onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel={muted ? 'Unmute notifications' : 'Mute notifications'}
     >
-      <Text style={[styles.bell, muted && styles.bellMuted]}>{muted ? '🔕' : '🔔'}</Text>
+      <Ionicons
+        name={muted ? 'notifications-off-outline' : 'notifications-outline'}
+        size={20}
+        color={muted ? colors.textFaint : colors.textBody}
+      />
     </Pressable>
   );
 }
@@ -41,6 +50,20 @@ export default function FavoritesScreen() {
     setMuted,
   } = useFavorites();
 
+  // The tab stays mounted, so re-sync whenever it regains focus — stars can
+  // be toggled from the line screen in between. First focus is covered by
+  // the mount fetch.
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      refetch();
+    }, [refetch]),
+  );
+
   const lines = favorites.filter((f) => f.lines);
   const stops = favorites.filter((f) => f.stops);
 
@@ -51,29 +74,29 @@ export default function FavoritesScreen() {
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refetch} />}
     >
       {isLoading && <ActivityIndicator style={styles.spinner} />}
-      {error && <Text style={styles.error}>Favorites failed to load: {error}</Text>}
-      {mutationError && <Text style={styles.error}>Change failed: {mutationError}</Text>}
+      {error && <ErrorText>Favorites failed to load: {error}</ErrorText>}
+      {mutationError && <ErrorText>Change failed: {mutationError}</ErrorText>}
 
       {!isLoading && favorites.length === 0 && !error && (
-        <Text style={styles.empty}>
+        <EmptyState>
           Nothing here yet. Star a line or a stop to get updates that matter to you.
-        </Text>
+        </EmptyState>
       )}
 
       {lines.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>Lines</Text>
+          <SectionTitle style={styles.sectionTitle}>Lines</SectionTitle>
           {lines.map((favorite) => (
             <Link key={favorite.id} href={`/lines/${favorite.lines!.id}`} asChild>
-              <Pressable style={styles.row}>
-                <Text style={styles.modeIcon}>{MODE_ICONS[favorite.lines!.mode] ?? '🚏'}</Text>
+              <Row>
+                <ModeIcon mode={favorite.lines!.mode} />
                 <Text style={styles.rowName}>{favorite.lines!.name}</Text>
                 <MuteBell
                   muted={favorite.muted}
                   onPress={() => setMuted(favorite.id, !favorite.muted)}
                 />
                 <Star active onPress={() => toggleLine(favorite.lines!.id)} />
-              </Pressable>
+              </Row>
             </Link>
           ))}
         </>
@@ -81,24 +104,24 @@ export default function FavoritesScreen() {
 
       {stops.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>Stops</Text>
+          <SectionTitle style={styles.sectionTitle}>Stops</SectionTitle>
           {stops.map((favorite) => (
-            <View key={favorite.id} style={styles.row}>
-              <Text style={styles.modeIcon}>🚏</Text>
+            <RowView key={favorite.id}>
+              <Ionicons name="location-outline" size={20} color={colors.primary} />
               <Text style={styles.rowName}>{favorite.stops!.name}</Text>
               <MuteBell
                 muted={favorite.muted}
                 onPress={() => setMuted(favorite.id, !favorite.muted)}
               />
               <Star active onPress={() => toggleStop(favorite.stops!.id)} />
-            </View>
+            </RowView>
           ))}
         </>
       )}
 
       {favorites.some((f) => f.muted) && (
         <Text style={styles.mutedHint}>
-          🔕 Muted favorites stay in your list but won't send notifications.
+          Muted favorites stay in your list but won't send notifications.
         </Text>
       )}
     </ScrollView>
@@ -108,58 +131,28 @@ export default function FavoritesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bg,
   },
   content: {
-    padding: 16,
+    padding: spacing.lg,
     gap: 10,
   },
   spinner: {
     marginTop: 32,
   },
-  error: {
-    color: '#d92d20',
-  },
-  empty: {
-    textAlign: 'center',
-    color: '#98a2b3',
-    marginTop: 48,
-    paddingHorizontal: 24,
-    lineHeight: 20,
-  },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: 8,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#eaecf0',
-    padding: 16,
-  },
-  modeIcon: {
-    fontSize: 22,
+    marginTop: spacing.sm,
   },
   rowName: {
     flex: 1,
-    fontSize: 16,
+    fontSize: fontSize.md,
     fontWeight: '600',
-  },
-  bell: {
-    fontSize: 18,
-  },
-  bellMuted: {
-    opacity: 0.5,
+    color: colors.text,
   },
   mutedHint: {
-    color: '#98a2b3',
-    fontSize: 13,
+    color: colors.textFaint,
+    fontSize: fontSize.xs,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
 });
