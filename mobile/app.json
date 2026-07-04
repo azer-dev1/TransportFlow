@@ -30,7 +30,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "TransportFlow uses your location to find stops near you."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

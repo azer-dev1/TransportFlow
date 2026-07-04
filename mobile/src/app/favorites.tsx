@@ -1,5 +1,13 @@
 import { Link } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { Star } from '@/components/Star';
 import { useFavorites } from '@/lib/use-favorites';
@@ -21,14 +29,27 @@ function MuteBell({ muted, onPress }: { muted: boolean; onPress: () => void }) {
 }
 
 export default function FavoritesScreen() {
-  const { favorites, error, isLoading, mutationError, toggleLine, toggleStop, setMuted } =
-    useFavorites();
+  const {
+    favorites,
+    error,
+    isLoading,
+    refetch,
+    isRefreshing,
+    mutationError,
+    toggleLine,
+    toggleStop,
+    setMuted,
+  } = useFavorites();
 
   const lines = favorites.filter((f) => f.lines);
   const stops = favorites.filter((f) => f.stops);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refetch} />}
+    >
       {isLoading && <ActivityIndicator style={styles.spinner} />}
       {error && <Text style={styles.error}>Favorites failed to load: {error}</Text>}
       {mutationError && <Text style={styles.error}>Change failed: {mutationError}</Text>}

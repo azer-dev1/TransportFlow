@@ -64,6 +64,10 @@ export default function SignInScreen() {
 
       {error && <Text style={styles.error}>{error}</Text>}
 
+      <Link href="/forgot-password" style={styles.forgotLink}>
+        Forgot password?
+      </Link>
+
       <Pressable
         style={[styles.button, !canSubmit && styles.buttonDisabled]}
         disabled={!canSubmit}
@@ -136,5 +140,10 @@ const styles = StyleSheet.create({
   footerLink: {
     color: '#175cd3',
     fontWeight: '600',
+  },
+  forgotLink: {
+    color: '#175cd3',
+    fontWeight: '600',
+    alignSelf: 'flex-end',
   },
 });

@@ -27,7 +27,7 @@ export default function LineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isLineFavorite, isStopFavorite, toggleLine, toggleStop, mutationError } = useFavorites();
 
-  const { data: line } = useSupabaseQuery(
+  const { data: line, refetch: refetchLine } = useSupabaseQuery(
     () => supabase.from('lines').select('*').eq('id', id).single(),
     [id],
   );
@@ -45,7 +45,7 @@ export default function LineDetailScreen() {
     [id],
   );
 
-  const { data: lineStops, error: stopsError } = useSupabaseQuery(
+  const { data: lineStops, error: stopsError, refetch: refetchStops } = useSupabaseQuery(
     () =>
       supabase
         .from('line_stops')
@@ -59,6 +59,8 @@ export default function LineDetailScreen() {
     data: trips,
     error: tripsError,
     isLoading: tripsLoading,
+    refetch: refetchTrips,
+    isRefreshing: tripsRefreshing,
   } = useSupabaseQuery(
     () =>
       supabase
@@ -84,6 +86,13 @@ export default function LineDetailScreen() {
         data={trips ?? []}
         keyExtractor={(trip) => trip.id}
         contentContainerStyle={styles.list}
+        refreshing={tripsRefreshing}
+        onRefresh={() => {
+          refetchLine();
+          refetchAlerts();
+          refetchStops();
+          refetchTrips();
+        }}
         ListHeaderComponent={
           <View style={styles.header}>
             {(alerts ?? []).map((alert) => (

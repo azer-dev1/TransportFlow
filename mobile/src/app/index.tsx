@@ -79,6 +79,8 @@ export default function LinesScreen() {
     data: lines,
     error,
     isLoading,
+    refetch,
+    isRefreshing,
   } = useSupabaseQuery(() => supabase.from('lines').select('*').order('name'), []);
   const [query, setQuery] = useState('');
   const { results, searching } = useSearch(query);
@@ -135,6 +137,12 @@ export default function LinesScreen() {
         clearButtonMode="while-editing"
       />
 
+      <Link href="/nearby" asChild>
+        <Pressable style={styles.nearbyButton}>
+          <Text style={styles.nearbyText}>📍 Stops near me</Text>
+        </Pressable>
+      </Link>
+
       {isLoading && <ActivityIndicator style={styles.spinner} />}
       {error && <Text style={styles.error}>Lines failed to load: {error}</Text>}
 
@@ -183,6 +191,8 @@ export default function LinesScreen() {
           data={lines ?? []}
           keyExtractor={(line) => line.id}
           contentContainerStyle={styles.list}
+          onRefresh={refetch}
+          refreshing={isRefreshing}
           renderItem={({ item }) => lineRow(item)}
           ListEmptyComponent={
             !isLoading && !error ? <Text style={styles.empty}>No lines yet.</Text> : null
@@ -237,6 +247,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 16,
+  },
+  nearbyButton: {
+    marginHorizontal: 16,
+    marginTop: 10,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#d0d5dd',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  nearbyText: {
+    color: '#175cd3',
+    fontWeight: '600',
+    fontSize: 15,
   },
   spinner: {
     marginTop: 16,

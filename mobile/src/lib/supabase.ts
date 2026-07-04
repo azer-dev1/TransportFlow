@@ -21,6 +21,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     // No auth redirect URLs land in a native app's "location", so skip URL parsing.
     detectSessionInUrl: false,
+    // Recovery links redirect back with a ?code= the app exchanges itself
+    // (the reset-password screen); the verifier never leaves this install.
+    flowType: 'pkce',
   },
 });
 

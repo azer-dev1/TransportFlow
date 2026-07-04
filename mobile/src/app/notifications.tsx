@@ -16,6 +16,7 @@ export default function NotificationsScreen() {
     error,
     isLoading,
     refetch,
+    isRefreshing,
   } = useSupabaseQuery(
     () =>
       supabase
@@ -52,7 +53,7 @@ export default function NotificationsScreen() {
         keyExtractor={(n) => n.id}
         contentContainerStyle={styles.list}
         onRefresh={refetch}
-        refreshing={isLoading}
+        refreshing={isRefreshing}
         renderItem={({ item: n }) => {
           const body = (
             <View style={[styles.row, !n.read_at && styles.rowUnread]}>

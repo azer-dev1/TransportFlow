@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 import { supabase, type Profile } from './supabase';
 
@@ -9,9 +9,16 @@ type AuthState = {
   profile: Profile | null;
   /** true until the persisted session (if any) has been restored from storage */
   isLoading: boolean;
+  /** re-fetch the profile row, e.g. after the user edits their name */
+  refreshProfile: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthState>({ session: null, profile: null, isLoading: true });
+const AuthContext = createContext<AuthState>({
+  session: null,
+  profile: null,
+  isLoading: true,
+  refreshProfile: async () => {},
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -32,12 +39,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const userId = session?.user.id;
-  useEffect(() => {
+  const refreshProfile = useCallback(async () => {
     if (!userId) {
       setProfile(null);
       return;
     }
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    setProfile(data ?? null);
+  }, [userId]);
+
+  useEffect(() => {
     let cancelled = false;
+    if (!userId) {
+      setProfile(null);
+      return;
+    }
     supabase
       .from('profiles')
       .select('*')
@@ -52,7 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [userId]);
 
   return (
-    <AuthContext.Provider value={{ session, profile, isLoading }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ session, profile, isLoading, refreshProfile }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

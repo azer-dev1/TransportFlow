@@ -31,7 +31,11 @@ export default function TripDetailScreen() {
 
   // Server-side ETAs: the trip_stop_times view owns the arrival math
   // (offset + delay, NULL expected_arrival when cancelled).
-  const { data: stopTimes, refetch: refetchStopTimes } = useSupabaseQuery(
+  const {
+    data: stopTimes,
+    refetch: refetchStopTimes,
+    isRefreshing: stopTimesRefreshing,
+  } = useSupabaseQuery(
     () =>
       supabase
         .from('trip_stop_times')
@@ -95,6 +99,12 @@ export default function TripDetailScreen() {
           data={history ?? []}
           keyExtractor={(update) => update.id}
           contentContainerStyle={styles.list}
+          refreshing={stopTimesRefreshing}
+          onRefresh={() => {
+            refetchTrip();
+            refetchStopTimes();
+            refetchHistory();
+          }}
           ListHeaderComponent={
             <View style={styles.headerBlock}>
               <View style={styles.card}>

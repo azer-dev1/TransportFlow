@@ -25,6 +25,7 @@ function RootNavigator() {
         <Stack.Screen name="index" options={{ title: 'Lines' }} />
         <Stack.Screen name="profile" options={{ title: 'Profile' }} />
         <Stack.Screen name="favorites" options={{ title: 'My favorites' }} />
+        <Stack.Screen name="nearby" options={{ title: 'Nearby stops' }} />
         <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
         <Stack.Screen name="lines/[id]" options={{ title: 'Line' }} />
         <Stack.Screen name="trips/[id]" options={{ title: 'Trip' }} />
@@ -32,6 +33,9 @@ function RootNavigator() {
       <Stack.Protected guard={!session}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       </Stack.Protected>
+      {/* Outside both guards: reached signed-out via the recovery deep link,
+          and must stay mounted when the code exchange signs the user in. */}
+      <Stack.Screen name="reset-password" options={{ title: 'Reset password' }} />
     </Stack>
   );
 }

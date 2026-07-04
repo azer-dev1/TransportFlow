@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -146,13 +147,212 @@ function QuietHoursCard({ userId }: { userId: string }) {
   );
 }
 
+/** Owner-only column grant: profiles.full_name is the only client-writable field. */
+function NameEditor({ currentName, onSaved }: { currentName: string; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(currentName);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { session } = useAuth();
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ full_name: name.trim() })
+      .eq('id', session!.user.id);
+    setSaving(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setEditing(false);
+    onSaved();
+  }
+
+  if (!editing) {
+    return (
+      <View style={styles.nameRow}>
+        <Text style={styles.greeting}>{currentName}</Text>
+        <Pressable
+          onPress={() => {
+            setName(currentName);
+            setEditing(true);
+          }}
+        >
+          <Text style={styles.editLink}>Edit</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  const canSave = name.trim().length > 0 && !saving;
+  return (
+    <View style={styles.nameEdit}>
+      <TextInput
+        style={styles.input}
+        value={name}
+        onChangeText={setName}
+        autoFocus
+        placeholder="Your name"
+        onSubmitEditing={() => canSave && save()}
+      />
+      {error && <Text style={styles.error}>{error}</Text>}
+      <View style={styles.nameEditActions}>
+        <Pressable onPress={() => setEditing(false)}>
+          <Text style={styles.cancelLink}>Cancel</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.saveButton, styles.saveButtonInline, !canSave && styles.saveButtonDisabled]}
+          disabled={!canSave}
+          onPress={save}
+        >
+          {saving ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save</Text>
+          )}
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function ChangePasswordCard() {
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  async function save() {
+    if (password !== confirm) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    const { error: updateError } = await supabase.auth.updateUser({ password });
+    setSaving(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setPassword('');
+    setConfirm('');
+    setSaved(true);
+    setOpen(false);
+  }
+
+  const canSave = password.length > 0 && confirm.length > 0 && !saving;
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardTitle}>Password</Text>
+        <Pressable onPress={() => setOpen(!open)}>
+          <Text style={styles.editLink}>{open ? 'Close' : 'Change'}</Text>
+        </Pressable>
+      </View>
+      {saved && !open && <Text style={styles.success}>Password updated.</Text>}
+
+      {open && (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="New password"
+            autoComplete="new-password"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Repeat new password"
+            autoComplete="new-password"
+            secureTextEntry
+            value={confirm}
+            onChangeText={setConfirm}
+            onSubmitEditing={() => canSave && save()}
+          />
+          {error && <Text style={styles.error}>{error}</Text>}
+          <Pressable
+            style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
+            disabled={!canSave}
+            onPress={save}
+          >
+            {saving ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.saveButtonText}>Update password</Text>
+            )}
+          </Pressable>
+        </>
+      )}
+    </View>
+  );
+}
+
+/**
+ * Play Store requirement: apps with account creation must offer in-app
+ * account deletion. The delete-account Edge Function removes the auth user;
+ * the DB cascade takes profile, favorites, devices and notifications with it.
+ */
+function DeleteAccountButton() {
+  const [deleting, setDeleting] = useState(false);
+
+  function confirmDelete() {
+    Alert.alert(
+      'Delete account?',
+      'This permanently deletes your account, favorites and notifications. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: deleteAccount },
+      ],
+    );
+  }
+
+  async function deleteAccount() {
+    setDeleting(true);
+    const { error } = await supabase.functions.invoke('delete-account');
+    if (error) {
+      setDeleting(false);
+      Alert.alert('Deletion failed', error.message);
+      return;
+    }
+    // The server-side session died with the user; only local state remains.
+    await supabase.auth.signOut({ scope: 'local' });
+  }
+
+  return (
+    <Pressable style={styles.deleteAccount} disabled={deleting} onPress={confirmDelete}>
+      {deleting ? (
+        <ActivityIndicator color="#d92d20" />
+      ) : (
+        <Text style={styles.deleteAccountText}>Delete account</Text>
+      )}
+    </Pressable>
+  );
+}
+
 export default function ProfileScreen() {
-  const { session, profile } = useAuth();
+  const { session, profile, refreshProfile } = useAuth();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.card}>
-        <Text style={styles.greeting}>{profile ? profile.full_name : 'Loading…'}</Text>
+        {profile ? (
+          <NameEditor currentName={profile.full_name} onSaved={refreshProfile} />
+        ) : (
+          <Text style={styles.greeting}>Loading…</Text>
+        )}
         {profile && (
           <View style={[styles.badge, profile.role !== 'rider' && styles.badgeStaff]}>
             <Text style={styles.badgeText}>{profile.role}</Text>
@@ -161,11 +361,15 @@ export default function ProfileScreen() {
         <Text style={styles.email}>{session?.user.email}</Text>
       </View>
 
+      <ChangePasswordCard />
+
       {session && <QuietHoursCard userId={session.user.id} />}
 
       <Pressable style={styles.signOut} onPress={() => supabase.auth.signOut()}>
         <Text style={styles.signOutText}>Sign out</Text>
       </Pressable>
+
+      <DeleteAccountButton />
     </ScrollView>
   );
 }
@@ -205,6 +409,41 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 22,
     fontWeight: '700',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  nameEdit: {
+    gap: 8,
+  },
+  nameEditActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 16,
+  },
+  editLink: {
+    color: '#175cd3',
+    fontWeight: '600',
+  },
+  cancelLink: {
+    color: '#475467',
+    fontWeight: '600',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d0d5dd',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
+  saveButtonInline: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginTop: 0,
   },
   badge: {
     alignSelf: 'flex-start',
@@ -287,5 +526,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#344054',
+  },
+  deleteAccount: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  deleteAccountText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#d92d20',
   },
 });

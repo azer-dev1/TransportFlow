@@ -393,6 +393,13 @@ deno_version = 2
 enabled = true
 verify_jwt = true
 
+# Self-service account deletion, invoked by the signed-in user from the
+# profile screen. verify_jwt on: only a valid user token reaches the
+# function, and it only ever deletes the token's own user.
+[functions.delete-account]
+enabled = true
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

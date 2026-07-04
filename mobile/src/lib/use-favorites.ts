@@ -18,6 +18,7 @@ export function useFavorites() {
     error,
     isLoading,
     refetch,
+    isRefreshing,
   } = useSupabaseQuery(
     () =>
       supabase
@@ -64,6 +65,7 @@ export function useFavorites() {
     error,
     isLoading,
     refetch,
+    isRefreshing,
     isMutating,
     mutationError,
     setMuted,
