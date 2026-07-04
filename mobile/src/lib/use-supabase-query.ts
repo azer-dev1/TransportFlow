@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type QueryState<T> = {
   data: T | null;
@@ -8,14 +8,16 @@ type QueryState<T> = {
 
 /**
  * Minimal fetch-on-mount wrapper for a supabase query builder call.
- * `query` runs whenever `deps` change; unmounted/superseded responses are dropped.
+ * `query` runs whenever `deps` change; superseded responses are dropped.
+ * `refetch` resolves once the fresh data has been applied, so callers can
+ * sequence optimistic UI against it.
  * The generic ranges over the whole response because supabase returns a
  * discriminated union (success/failure) that breaks inference on `data` alone.
  */
 export function useSupabaseQuery<R extends { data: unknown; error: { message: string } | null }>(
   query: () => PromiseLike<R>,
   deps: unknown[],
-): QueryState<NonNullable<R['data']>> & { refetch: () => void; isRefreshing: boolean } {
+): QueryState<NonNullable<R['data']>> & { refetch: () => Promise<void>; isRefreshing: boolean } {
   type Data = NonNullable<R['data']>;
   const [state, setState] = useState<QueryState<Data>>({
     data: null,
@@ -26,25 +28,26 @@ export function useSupabaseQuery<R extends { data: unknown; error: { message: st
   // isRefreshing covers refetch() re-runs (data on screen, feed it to a
   // RefreshControl instead of blanking the list).
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [nonce, setNonce] = useState(0);
+
+  const queryRef = useRef(query);
+  queryRef.current = query;
+  const requestId = useRef(0);
+
+  const run = useCallback(async (isRefetch: boolean) => {
+    const id = ++requestId.current;
+    if (isRefetch) setIsRefreshing(true);
+    const { data, error } = await queryRef.current();
+    if (id !== requestId.current) return;
+    setState({ data: (data ?? null) as Data | null, error: error?.message ?? null, isLoading: false });
+    setIsRefreshing(false);
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    query().then(({ data, error }) => {
-      if (cancelled) return;
-      setState({ data: (data ?? null) as Data | null, error: error?.message ?? null, isLoading: false });
-      setIsRefreshing(false);
-    });
-    return () => {
-      cancelled = true;
-    };
+    run(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, nonce]);
+  }, deps);
 
-  const refetch = useCallback(() => {
-    setIsRefreshing(true);
-    setNonce((n) => n + 1);
-  }, []);
+  const refetch = useCallback(() => run(true), [run]);
 
   return { ...state, refetch, isRefreshing };
 }

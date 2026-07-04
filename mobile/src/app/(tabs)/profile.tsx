@@ -357,8 +357,14 @@ function UpdatesCard() {
 export default function ProfileScreen() {
   const { session, profile, refreshProfile } = useAuth();
 
+  // keyboardShouldPersistTaps: with the keyboard open, the first tap must
+  // reach Save/Cancel instead of only dismissing the keyboard.
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+    >
       <Card>
         {profile ? (
           <NameEditor currentName={profile.full_name} onSaved={refreshProfile} />

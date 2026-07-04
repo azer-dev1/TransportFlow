@@ -45,6 +45,8 @@ export default function FavoritesScreen() {
     refetch,
     isRefreshing,
     mutationError,
+    isLineFavorite,
+    isStopFavorite,
     toggleLine,
     toggleStop,
     setMuted,
@@ -95,7 +97,10 @@ export default function FavoritesScreen() {
                   muted={favorite.muted}
                   onPress={() => setMuted(favorite.id, !favorite.muted)}
                 />
-                <Star active onPress={() => toggleLine(favorite.lines!.id)} />
+                <Star
+                  active={isLineFavorite(favorite.lines!.id)}
+                  onPress={() => toggleLine(favorite.lines!.id)}
+                />
               </Row>
             </Link>
           ))}
@@ -113,7 +118,10 @@ export default function FavoritesScreen() {
                 muted={favorite.muted}
                 onPress={() => setMuted(favorite.id, !favorite.muted)}
               />
-              <Star active onPress={() => toggleStop(favorite.stops!.id)} />
+              <Star
+                active={isStopFavorite(favorite.stops!.id)}
+                onPress={() => toggleStop(favorite.stops!.id)}
+              />
             </RowView>
           ))}
         </>
