@@ -1,17 +1,13 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 
+import { Button } from '@/components/Button';
+import { ErrorText } from '@/components/ErrorText';
+import { FormInput } from '@/components/FormInput';
+import { PasswordInput } from '@/components/PasswordInput';
 import { supabase } from '@/lib/supabase';
+import { colors, fontSize, spacing } from '@/lib/theme';
 
 export default function SignUpScreen() {
   const [fullName, setFullName] = useState('');
@@ -19,12 +15,13 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   async function signUp() {
     setSubmitting(true);
     setError(null);
     // handle_new_user() creates the profiles row from this metadata.
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: { data: { full_name: fullName.trim() } },
@@ -32,11 +29,37 @@ export default function SignUpScreen() {
     if (signUpError) {
       setError(signUpError.message);
       setSubmitting(false);
+      return;
+    }
+    // With autoconfirm on, a session comes back and the root layout swaps
+    // stacks via the auth listener. Without one, the project requires email
+    // confirmation — tell the user instead of leaving the button spinning.
+    if (!data.session) {
+      setNeedsConfirmation(true);
+      setSubmitting(false);
     }
   }
 
   const canSubmit =
     fullName.trim().length > 0 && email.trim().length > 0 && password.length >= 6 && !submitting;
+
+  if (needsConfirmation) {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <Text style={styles.title}>Confirm your email</Text>
+        <Text style={styles.hint}>
+          We sent a confirmation link to {email.trim()}. Open it on this phone, then sign in with
+          your new password.
+        </Text>
+        <Link href="/sign-in" style={styles.footerLink}>
+          Back to sign in
+        </Link>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -45,15 +68,13 @@ export default function SignUpScreen() {
     >
       <Text style={styles.title}>Create your account</Text>
 
-      <TextInput
-        style={styles.input}
+      <FormInput
         placeholder="Full name"
         autoComplete="name"
         value={fullName}
         onChangeText={setFullName}
       />
-      <TextInput
-        style={styles.input}
+      <FormInput
         placeholder="Email"
         autoCapitalize="none"
         autoComplete="email"
@@ -61,29 +82,22 @@ export default function SignUpScreen() {
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput
-        style={styles.input}
+      <PasswordInput
         placeholder="Password (min 6 characters)"
         autoComplete="new-password"
-        secureTextEntry
         value={password}
         onChangeText={setPassword}
         onSubmitEditing={() => canSubmit && signUp()}
       />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <ErrorText>{error}</ErrorText>}
 
-      <Pressable
-        style={[styles.button, !canSubmit && styles.buttonDisabled]}
-        disabled={!canSubmit}
+      <Button
+        label="Create account"
         onPress={signUp}
-      >
-        {submitting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Create account</Text>
-        )}
-      </Pressable>
+        disabled={!canSubmit}
+        loading={submitting}
+      />
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>Already have an account? </Text>
@@ -99,51 +113,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-    backgroundColor: '#fff',
+    padding: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: colors.surface,
   },
   title: {
-    fontSize: 28,
+    fontSize: fontSize.xxl,
     fontWeight: '700',
-    marginBottom: 12,
+    color: colors.text,
+    marginBottom: spacing.md,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d0d5dd',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  error: {
-    color: '#d92d20',
-  },
-  button: {
-    backgroundColor: '#175cd3',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  hint: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    lineHeight: 21,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: spacing.lg,
   },
   footerText: {
-    color: '#475467',
+    color: colors.textMuted,
   },
   footerLink: {
-    color: '#175cd3',
+    color: colors.primary,
     fontWeight: '600',
   },
 });

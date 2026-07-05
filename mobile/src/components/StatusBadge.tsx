@@ -1,14 +1,16 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { colors, fontSize, radii } from '@/lib/theme';
+
 const STATUS_STYLES: Record<string, { label: string; fg: string; bg: string }> = {
-  on_time: { label: 'On time', fg: '#067647', bg: '#ecfdf3' },
-  delayed: { label: 'Delayed', fg: '#b54708', bg: '#fffaeb' },
-  cancelled: { label: 'Cancelled', fg: '#d92d20', bg: '#fef3f2' },
-  completed: { label: 'Completed', fg: '#475467', bg: '#f2f4f7' },
+  on_time: { label: 'On time', fg: colors.success, bg: colors.successSurface },
+  delayed: { label: 'Delayed', fg: colors.warning, bg: colors.warningSurface },
+  cancelled: { label: 'Cancelled', fg: colors.danger, bg: colors.dangerSurface },
+  completed: { label: 'Completed', fg: colors.textMuted, bg: colors.neutralSurface },
 };
 
 export function StatusBadge({ status, delayMinutes }: { status: string; delayMinutes?: number }) {
-  const s = STATUS_STYLES[status] ?? { label: status, fg: '#344054', bg: '#f2f4f7' };
+  const s = STATUS_STYLES[status] ?? { label: status, fg: colors.textBody, bg: colors.neutralSurface };
   const label =
     status === 'delayed' && delayMinutes ? `${s.label} +${delayMinutes} min` : s.label;
 
@@ -21,13 +23,13 @@ export function StatusBadge({ status, delayMinutes }: { status: string; delayMin
 
 const styles = StyleSheet.create({
   badge: {
-    borderRadius: 999,
+    borderRadius: radii.pill,
     paddingHorizontal: 10,
     paddingVertical: 3,
     alignSelf: 'flex-start',
   },
   text: {
-    fontSize: 13,
+    fontSize: fontSize.xs,
     fontWeight: '600',
   },
 });

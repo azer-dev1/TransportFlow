@@ -1,4 +1,7 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Pressable } from 'react-native';
+
+import { colors } from '@/lib/theme';
 
 export function Star({
   active,
@@ -16,21 +19,11 @@ export function Star({
       accessibilityRole="button"
       accessibilityLabel={active ? 'Remove from favorites' : 'Add to favorites'}
     >
-      <Text style={[styles.star, { fontSize: size }, active ? styles.active : styles.inactive]}>
-        {active ? '★' : '☆'}
-      </Text>
+      <Ionicons
+        name={active ? 'star' : 'star-outline'}
+        size={size}
+        color={active ? colors.star : colors.textFaint}
+      />
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  star: {
-    lineHeight: 28,
-  },
-  active: {
-    color: '#eaaa08',
-  },
-  inactive: {
-    color: '#98a2b3',
-  },
-});

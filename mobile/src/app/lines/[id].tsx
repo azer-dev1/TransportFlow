@@ -1,11 +1,20 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { AlertBanner } from '@/components/AlertBanner';
+import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorText } from '@/components/ErrorText';
+import { Row } from '@/components/Row';
+import { SectionTitle } from '@/components/SectionTitle';
+import { Spinner } from '@/components/Spinner';
 import { StaffAlertCard } from '@/components/StaffAlertCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Star } from '@/components/Star';
+import { StopsMap } from '@/components/StopsMap';
 import { supabase } from '@/lib/supabase';
+import { colors, fontSize, spacing } from '@/lib/theme';
 import { useFavorites } from '@/lib/use-favorites';
 import { useSupabaseQuery } from '@/lib/use-supabase-query';
 
@@ -27,7 +36,7 @@ export default function LineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isLineFavorite, isStopFavorite, toggleLine, toggleStop, mutationError } = useFavorites();
 
-  const { data: line } = useSupabaseQuery(
+  const { data: line, refetch: refetchLine } = useSupabaseQuery(
     () => supabase.from('lines').select('*').eq('id', id).single(),
     [id],
   );
@@ -45,11 +54,11 @@ export default function LineDetailScreen() {
     [id],
   );
 
-  const { data: lineStops, error: stopsError } = useSupabaseQuery(
+  const { data: lineStops, error: stopsError, refetch: refetchStops } = useSupabaseQuery(
     () =>
       supabase
         .from('line_stops')
-        .select('id, sequence_order, arrival_offset_minutes, stops(id, name)')
+        .select('id, sequence_order, arrival_offset_minutes, stops(id, name, latitude, longitude)')
         .eq('line_id', id)
         .order('sequence_order'),
     [id],
@@ -59,6 +68,8 @@ export default function LineDetailScreen() {
     data: trips,
     error: tripsError,
     isLoading: tripsLoading,
+    refetch: refetchTrips,
+    isRefreshing: tripsRefreshing,
   } = useSupabaseQuery(
     () =>
       supabase
@@ -84,6 +95,16 @@ export default function LineDetailScreen() {
         data={trips ?? []}
         keyExtractor={(trip) => trip.id}
         contentContainerStyle={styles.list}
+        // keyboardShouldPersistTaps: with the keyboard open, the first tap must
+        // reach Post alert instead of only dismissing the keyboard.
+        keyboardShouldPersistTaps="handled"
+        refreshing={tripsRefreshing}
+        onRefresh={() => {
+          refetchLine();
+          refetchAlerts();
+          refetchStops();
+          refetchTrips();
+        }}
         ListHeaderComponent={
           <View style={styles.header}>
             {(alerts ?? []).map((alert) => (
@@ -97,10 +118,26 @@ export default function LineDetailScreen() {
 
             <StaffAlertCard lineId={id} onPosted={refetchAlerts} />
 
-            <Text style={styles.sectionTitle}>Stops</Text>
-            {stopsError && <Text style={styles.error}>Stops failed to load: {stopsError}</Text>}
-            {mutationError && <Text style={styles.error}>Favorite change failed: {mutationError}</Text>}
-            <View style={styles.card}>
+            <StopsMap
+              connected
+              stops={(lineStops ?? [])
+                .filter((ls) => ls.stops)
+                .map((ls) => ({
+                  id: ls.stops!.id,
+                  name: ls.stops!.name,
+                  latitude: ls.stops!.latitude,
+                  longitude: ls.stops!.longitude,
+                  description:
+                    ls.arrival_offset_minutes === 0
+                      ? 'Departure'
+                      : `+${ls.arrival_offset_minutes} min`,
+                }))}
+            />
+
+            <SectionTitle style={styles.sectionTitle}>Stops</SectionTitle>
+            {stopsError && <ErrorText>Stops failed to load: {stopsError}</ErrorText>}
+            {mutationError && <ErrorText>Favorite change failed: {mutationError}</ErrorText>}
+            <Card style={styles.stopsCard}>
               {(lineStops ?? []).map((ls, index) => (
                 <View key={ls.id} style={styles.stopRow}>
                   <View style={styles.stopMarkerColumn}>
@@ -120,28 +157,28 @@ export default function LineDetailScreen() {
                   )}
                 </View>
               ))}
-            </View>
+            </Card>
 
-            <Text style={styles.sectionTitle}>Upcoming departures</Text>
-            {tripsLoading && <ActivityIndicator style={styles.spinner} />}
-            {tripsError && <Text style={styles.error}>Schedule failed to load: {tripsError}</Text>}
+            <SectionTitle style={styles.sectionTitle}>Upcoming departures</SectionTitle>
+            {tripsLoading && <Spinner style={styles.spinner} />}
+            {tripsError && <ErrorText>Schedule failed to load: {tripsError}</ErrorText>}
           </View>
         }
         renderItem={({ item: trip }) => (
           <Link href={`/trips/${trip.id}`} asChild>
-            <Pressable style={styles.tripRow}>
+            <Row style={styles.tripRow}>
               <View style={styles.tripWhen}>
                 <Text style={styles.tripTime}>{departureTime(trip.scheduled_departure)}</Text>
                 <Text style={styles.tripDay}>{departureDayLabel(trip.scheduled_departure)}</Text>
               </View>
               <StatusBadge status={trip.status} delayMinutes={trip.delay_minutes} />
-              <Text style={styles.chevron}>›</Text>
-            </Pressable>
+              <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+            </Row>
           </Link>
         )}
         ListEmptyComponent={
           !tripsLoading && !tripsError ? (
-            <Text style={styles.empty}>No upcoming departures.</Text>
+            <EmptyState>No upcoming departures.</EmptyState>
           ) : null
         }
       />
@@ -152,31 +189,25 @@ export default function LineDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bg,
   },
   list: {
-    padding: 16,
+    padding: spacing.lg,
     gap: 10,
   },
   header: {
     gap: 10,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#eaecf0',
-    padding: 16,
+  stopsCard: {
+    gap: 0,
   },
   stopRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: spacing.md,
   },
   stopMarkerColumn: {
     alignItems: 'center',
@@ -186,62 +217,44 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#175cd3',
+    backgroundColor: colors.primary,
     marginTop: 5,
   },
   stopLine: {
     width: 2,
     flex: 1,
     minHeight: 18,
-    backgroundColor: '#d0d5dd',
+    backgroundColor: colors.borderStrong,
   },
   stopName: {
     flex: 1,
-    fontSize: 15,
+    fontSize: fontSize.sm,
     fontWeight: '500',
-    paddingBottom: 16,
+    color: colors.text,
+    paddingBottom: spacing.lg,
   },
   stopOffset: {
-    color: '#475467',
+    color: colors.textMuted,
     fontVariant: ['tabular-nums'],
   },
   spinner: {
-    marginVertical: 8,
-  },
-  error: {
-    color: '#d92d20',
+    marginVertical: spacing.sm,
   },
   tripRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#eaecf0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
   },
   tripWhen: {
     flex: 1,
     gap: 2,
   },
-  chevron: {
-    fontSize: 24,
-    color: '#98a2b3',
-  },
   tripTime: {
     fontSize: 17,
     fontWeight: '700',
+    color: colors.text,
     fontVariant: ['tabular-nums'],
   },
   tripDay: {
-    color: '#475467',
-    fontSize: 13,
-  },
-  empty: {
-    textAlign: 'center',
-    color: '#98a2b3',
-    marginTop: 8,
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
   },
 });

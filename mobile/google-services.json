@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1051373926058",
+    "project_id": "transportflow-50c76",
+    "storage_bucket": "transportflow-50c76.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1051373926058:android:f8c96322bc59b869ea42d3",
+        "android_client_info": {
+          "package_name": "com.azerdev.transportflow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmgrzDONeJ7uwDNbWvtt7osq3DcX2CJs0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

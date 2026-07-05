@@ -3,7 +3,7 @@
     "name": "TransportFlow",
     "slug": "transportflow",
     "scheme": "transportflow",
-    "version": "1.0.0",
+    "version": "1.3.0",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -17,6 +17,7 @@
       "supportsTablet": true
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -30,7 +31,23 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "@maplibre/maplibre-react-native",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "TransportFlow uses your location to find stops near you."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#175cd3"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

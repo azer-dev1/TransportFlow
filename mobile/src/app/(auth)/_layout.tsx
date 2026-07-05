@@ -1,10 +1,13 @@
 import { Stack } from 'expo-router';
 
+// Auth screens carry their own titles ("Welcome back", …); the stack
+// headers only repeated them, so they're off.
 export default function AuthLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="sign-in" options={{ title: 'Sign in' }} />
-      <Stack.Screen name="sign-up" options={{ title: 'Create account' }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="sign-in" />
+      <Stack.Screen name="sign-up" />
+      <Stack.Screen name="forgot-password" />
     </Stack>
   );
 }

@@ -1,5 +1,29 @@
 # TransportFlow — Technical Architecture & Execution Blueprint
 
+> **⚠️ As-built update (2026-07-05).** This is the original pre-implementation plan, kept
+> for history. The shipped system (documented in the root `README.md`) deviates from it in
+> several load-bearing ways:
+>
+> - **No Express/Node API server was built.** The mobile app talks directly to Supabase
+>   (PostgREST + Realtime + Auth); authorization is enforced entirely by Postgres RLS,
+>   table grants, and column-level grants. Parts 2, 4, and the backend rows of Part 1 are
+>   therefore obsolete — there are no `/auth/*` or `/trips/:id/status` REST routes, no
+>   Render/Railway deployment, no Pino/Sentry backend monitoring.
+> - **Staff reports are an append-only log**, not a `PATCH` on `trips`: staff INSERT into
+>   `trip_updates` and a `SECURITY DEFINER` trigger syncs the trip's current state, keeping
+>   an audit trail. The Part 3 schema also grew beyond this plan: `service_patterns`
+>   (+ pg_cron trip materialization), `service_alerts`, `notification_prefs` (quiet hours),
+>   `favorites.muted`, `notifications.read_at`, an `admin` role, and the `trip_stop_times`
+>   ETA view, plus `search_lines`/`search_stops` (pg_trgm), `nearby_stops` (earthdistance)
+>   and `promote_to_staff` RPCs.
+> - **Push fan-out is Postgres → pg_net webhook → `notify-trip-update` Edge Function →
+>   Expo Push**, not an Express listener. Account deletion is a second Edge Function.
+> - **Styling** uses plain StyleSheet + shared theme tokens, not NativeWind. **Maps** use
+>   MapLibre + OpenFreeMap tiles. Network data comes from a **GTFS importer**
+>   (`scripts/gtfs-import`) rather than hand-seeded demo rows.
+> - The Vitest/Supertest/Maestro testing stack (Part 9) was not adopted; there is no
+>   Express app to test and verification has been manual/on-device.
+
 This blueprint translates the previously extracted TransportFlow requirements (schedules, real-time delay updates, rider/staff roles, favorites, notifications, maps) into a concrete, buildable system for a 1–4 person team over 3–5 weeks (using the upper bound, 5 weeks / extendable to 6 if your team has 4–6 weeks available). All domain examples below use TransportFlow entities (Rider, Staff, Stop, Line, Trip, Delay) — not the generic medical/Deaf-HoH examples from the task template, which do not apply to this project.
 
 ---

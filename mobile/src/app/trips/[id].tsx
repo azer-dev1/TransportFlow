@@ -1,10 +1,16 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 
+import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
+import { ErrorText } from '@/components/ErrorText';
+import { SectionTitle } from '@/components/SectionTitle';
+import { Spinner } from '@/components/Spinner';
 import { StaffReportCard } from '@/components/StaffReportCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { supabase } from '@/lib/supabase';
+import { colors, fontSize, spacing } from '@/lib/theme';
 import { useSupabaseQuery } from '@/lib/use-supabase-query';
 
 function formatTime(date: Date): string {
@@ -31,7 +37,11 @@ export default function TripDetailScreen() {
 
   // Server-side ETAs: the trip_stop_times view owns the arrival math
   // (offset + delay, NULL expected_arrival when cancelled).
-  const { data: stopTimes, refetch: refetchStopTimes } = useSupabaseQuery(
+  const {
+    data: stopTimes,
+    refetch: refetchStopTimes,
+    isRefreshing: stopTimesRefreshing,
+  } = useSupabaseQuery(
     () =>
       supabase
         .from('trip_stop_times')
@@ -87,25 +97,34 @@ export default function TripDetailScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ title: trip?.lines?.name ?? 'Trip' }} />
 
-      {tripLoading && <ActivityIndicator style={styles.spinner} />}
-      {tripError && <Text style={styles.error}>Trip failed to load: {tripError}</Text>}
+      {tripLoading && <Spinner style={styles.spinner} />}
+      {tripError && <ErrorText style={styles.errorPadded}>Trip failed to load: {tripError}</ErrorText>}
 
       {trip && (
         <FlatList
           data={history ?? []}
           keyExtractor={(update) => update.id}
           contentContainerStyle={styles.list}
+          // keyboardShouldPersistTaps: with the keyboard open, the first tap must
+          // reach the report buttons instead of only dismissing the keyboard.
+          keyboardShouldPersistTaps="handled"
+          refreshing={stopTimesRefreshing}
+          onRefresh={() => {
+            refetchTrip();
+            refetchStopTimes();
+            refetchHistory();
+          }}
           ListHeaderComponent={
             <View style={styles.headerBlock}>
-              <View style={styles.card}>
+              <Card>
                 <Text style={styles.departure}>{formatWhen(trip.scheduled_departure)}</Text>
                 <StatusBadge status={trip.status} delayMinutes={trip.delay_minutes} />
-              </View>
+              </Card>
 
               <StaffReportCard tripId={trip.id} />
 
-              <Text style={styles.sectionTitle}>Stops</Text>
-              <View style={styles.card}>
+              <SectionTitle style={styles.sectionTitle}>Stops</SectionTitle>
+              <Card style={styles.stopsCard}>
                 {(stopTimes ?? []).map((st, index) => {
                   // Cancelled trips have no expected arrival; show the
                   // scheduled time (struck through via cancelledText).
@@ -125,26 +144,22 @@ export default function TripDetailScreen() {
                     </View>
                   );
                 })}
-              </View>
+              </Card>
 
-              <Text style={styles.sectionTitle}>Updates</Text>
-              {historyError && (
-                <Text style={styles.error}>Updates failed to load: {historyError}</Text>
-              )}
+              <SectionTitle style={styles.sectionTitle}>Updates</SectionTitle>
+              {historyError && <ErrorText>Updates failed to load: {historyError}</ErrorText>}
             </View>
           }
           renderItem={({ item: update }) => (
-            <View style={styles.updateRow}>
-              <View style={styles.updateBody}>
-                <StatusBadge status={update.status} delayMinutes={update.delay_minutes} />
-                <Text style={styles.updateMeta}>
-                  {update.profiles?.full_name ?? 'Staff'} · {formatWhen(update.created_at)}
-                </Text>
-              </View>
-            </View>
+            <Card style={styles.updateRow}>
+              <StatusBadge status={update.status} delayMinutes={update.delay_minutes} />
+              <Text style={styles.updateMeta}>
+                {update.profiles?.full_name ?? 'Staff'} · {formatWhen(update.created_at)}
+              </Text>
+            </Card>
           )}
           ListEmptyComponent={
-            !historyError ? <Text style={styles.empty}>No updates reported for this trip.</Text> : null
+            !historyError ? <EmptyState>No updates reported for this trip.</EmptyState> : null
           }
         />
       )}
@@ -155,39 +170,36 @@ export default function TripDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.bg,
   },
   spinner: {
     marginTop: 32,
   },
+  errorPadded: {
+    padding: spacing.lg,
+  },
   list: {
-    padding: 16,
+    padding: spacing.lg,
     gap: 10,
   },
   headerBlock: {
     gap: 10,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#eaecf0',
-    padding: 16,
-    gap: 8,
-  },
   departure: {
     fontSize: 20,
     fontWeight: '700',
+    color: colors.text,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: 8,
+    marginTop: spacing.sm,
+  },
+  stopsCard: {
+    gap: 0,
   },
   stopRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: spacing.md,
   },
   stopMarkerColumn: {
     alignItems: 'center',
@@ -197,54 +209,39 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#175cd3',
+    backgroundColor: colors.primary,
     marginTop: 5,
   },
   stopDotCancelled: {
-    backgroundColor: '#98a2b3',
+    backgroundColor: colors.textFaint,
   },
   stopLine: {
     width: 2,
     flex: 1,
     minHeight: 18,
-    backgroundColor: '#d0d5dd',
+    backgroundColor: colors.borderStrong,
   },
   stopName: {
     flex: 1,
-    fontSize: 15,
+    fontSize: fontSize.sm,
     fontWeight: '500',
-    paddingBottom: 16,
+    color: colors.text,
+    paddingBottom: spacing.lg,
   },
   stopEta: {
-    color: '#475467',
+    color: colors.textMuted,
     fontVariant: ['tabular-nums'],
   },
   cancelledText: {
-    color: '#98a2b3',
+    color: colors.textFaint,
     textDecorationLine: 'line-through',
   },
-  error: {
-    color: '#d92d20',
-    padding: 16,
-  },
   updateRow: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#eaecf0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  updateBody: {
+    paddingVertical: spacing.md,
     gap: 6,
   },
   updateMeta: {
-    color: '#475467',
-    fontSize: 13,
-  },
-  empty: {
-    textAlign: 'center',
-    color: '#98a2b3',
-    marginTop: 8,
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
   },
 });
