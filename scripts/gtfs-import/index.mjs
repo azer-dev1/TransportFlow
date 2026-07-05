@@ -40,6 +40,10 @@ function argValue(flag, fallback = undefined) {
 const FILE = argValue("--file");
 const URL_ = argValue("--url");
 const MAX_ROUTES = Number(argValue("--max-routes", "40"));
+// Namespace folded into every generated id, so feeds whose GTFS ids overlap
+// (e.g. two agencies both using route_id "1") can coexist. "" keeps the ids
+// of historical single-feed imports.
+const PREFIX = argValue("--prefix", "");
 const PROJECT_REF = argValue("--project-ref", process.env.SUPABASE_PROJECT_REF ?? "cxekufirfbjoieztiqbz");
 const DRY_RUN = args.includes("--dry-run");
 const SQL_OUT = argValue("--sql-out", "gtfs-import.sql");
@@ -88,7 +92,11 @@ const stopTimes = readCsv("stop_times.txt");
 const calendar = readCsv("calendar.txt", false);
 const calendarDates = readCsv("calendar_dates.txt", false);
 
-const TIMEZONE = agency[0]?.agency_timezone || "UTC";
+// Some feeds miscase the tz (TRANSTU ships "AFRICA/TUNIS"); canonicalize
+// against the IANA names Node knows so downstream tz math is safe.
+const rawTz = agency[0]?.agency_timezone || "UTC";
+const TIMEZONE =
+  Intl.supportedValuesOf("timeZone").find((z) => z.toLowerCase() === rawTz.toLowerCase()) ?? rawTz;
 
 // ---------- service_id -> ISO weekdays (1=Mon..7=Sun) ----------
 const WEEKDAY_COLS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
@@ -122,16 +130,18 @@ for (const list of timesByTrip.values()) {
   list.sort((a, b) => Number(a.stop_sequence) - Number(b.stop_sequence));
 }
 
-// "HH:MM:SS", hours may exceed 23 (after-midnight service) -> total minutes
+// "HH:MM:SS", hours may exceed 23 (after-midnight service) -> total minutes.
+// Blank/malformed times (GTFS allows empty times on non-timepoint stops)
+// return null; note Number("") is 0, so a regex gate is required.
 function toMinutes(hms) {
-  const [h, m] = (hms ?? "").split(":").map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  if (!/^\d+:\d+(:\d+)?$/.test(hms ?? "")) return null;
+  const [h, m] = hms.split(":").map(Number);
   return h * 60 + m;
 }
 
 // ---------- per route: dominant sequence, offsets, departure patterns ----------
 function md5Uuid(seed) {
-  const h = createHash("md5").update(seed).digest("hex");
+  const h = createHash("md5").update(PREFIX ? `${PREFIX}:${seed}` : seed).digest("hex");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
@@ -165,10 +175,24 @@ for (const route of routes) {
   const rep = timesByTrip.get(groupTrips[0].trip_id);
   const t0 = toMinutes(rep[0].departure_time || rep[0].arrival_time);
   if (t0 === null) continue;
+  // Untimed stops (blank times, timepoint=0) get linearly interpolated
+  // arrival times between the surrounding timed stops, per GTFS semantics.
+  const absTimes = rep.map((st) => toMinutes(st.arrival_time || st.departure_time));
+  absTimes[0] ??= t0;
+  for (let i = 1; i < absTimes.length; i++) {
+    if (absTimes[i] !== null) continue;
+    let j = i;
+    while (j < absTimes.length && absTimes[j] === null) j++;
+    const prev = absTimes[i - 1];
+    const next = j < absTimes.length ? absTimes[j] : prev;
+    const span = j - (i - 1);
+    for (let k = i; k < j; k++) absTimes[k] = Math.round(prev + ((next - prev) * (k - (i - 1))) / span);
+    i = j;
+  }
   const lineStops = rep.map((st, i) => ({
     stopId: st.stop_id,
     seq: i + 1,
-    offset: Math.max(0, (toMinutes(st.arrival_time || st.departure_time) ?? t0) - t0),
+    offset: Math.max(0, absTimes[i] - t0),
   }));
 
   // Departure patterns from every trip of the dominant sequence: first-stop
