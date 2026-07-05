@@ -130,6 +130,9 @@ export default function LinesScreen() {
           data={results.lines}
           keyExtractor={(line) => line.id}
           contentContainerStyle={styles.list}
+          // keyboardShouldPersistTaps: with the keyboard open, the first tap must
+          // open the tapped result instead of only dismissing the keyboard.
+          keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
             searching ? <Spinner style={styles.spinner} /> : (
               <SectionTitle>Lines</SectionTitle>
@@ -171,6 +174,7 @@ export default function LinesScreen() {
           data={lines ?? []}
           keyExtractor={(line) => line.id}
           contentContainerStyle={styles.list}
+          keyboardShouldPersistTaps="handled"
           onRefresh={refetch}
           refreshing={isRefreshing}
           renderItem={({ item }) => lineRow(item)}

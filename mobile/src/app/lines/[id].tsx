@@ -95,6 +95,9 @@ export default function LineDetailScreen() {
         data={trips ?? []}
         keyExtractor={(trip) => trip.id}
         contentContainerStyle={styles.list}
+        // keyboardShouldPersistTaps: with the keyboard open, the first tap must
+        // reach Post alert instead of only dismissing the keyboard.
+        keyboardShouldPersistTaps="handled"
         refreshing={tripsRefreshing}
         onRefresh={() => {
           refetchLine();

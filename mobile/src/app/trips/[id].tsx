@@ -105,6 +105,9 @@ export default function TripDetailScreen() {
           data={history ?? []}
           keyExtractor={(update) => update.id}
           contentContainerStyle={styles.list}
+          // keyboardShouldPersistTaps: with the keyboard open, the first tap must
+          // reach the report buttons instead of only dismissing the keyboard.
+          keyboardShouldPersistTaps="handled"
           refreshing={stopTimesRefreshing}
           onRefresh={() => {
             refetchTrip();
