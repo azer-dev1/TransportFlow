@@ -36,17 +36,48 @@ just run it again with another feed (old lines stay unless you delete them).
 The currently imported feeds (2026-07-04) are Tunisian, from the Ministry of
 Transport's open-data portal ([catalogue-data.transport.tn](https://catalogue-data.transport.tn)):
 
-| prefix     | feed                                   | imported                 |
-| ---------- | -------------------------------------- | ------------------------ |
-| `transtu`  | TRANSTU (Tunis métro léger 1 + TGM)    | 3 lines / 31 stops       |
-| `soretrak` | SORETRAK (Kairouan buses)              | 34 lines / 189 stops     |
-| `sntri`    | SNTRI (intercity coaches)              | 23 lines / 157 stops     |
+| prefix        | feed                                   | imported                 |
+| ------------- | -------------------------------------- | ------------------------ |
+| `transtu`     | TRANSTU (Tunis métro léger 1 + TGM)    | 3 lines / 31 stops       |
+| `soretrak`    | SORETRAK (Kairouan buses)              | 34 lines / 189 stops     |
+| `sntri`       | SNTRI (intercity coaches)              | 23 lines / 157 stops     |
+| `sncft-sahel` | SNCFT Métro du Sahel (hand-authored)   | 2 lines / 32 stops       |
+| `sts`         | STS Sahel buses (converted, 2016 data) | 16 lines / ~65 stops     |
 
-Not imported: STS Sahel (published as UTF-16 tab-separated RAR, not real GTFS),
-SNCFT (dataset exists but no files uploaded). The TRANSTU feed is a 2019 pilot —
-métro lines 2–6 and the bus network are absent, and its two schedule-less routes
-(ligne2, ligne28) are dropped automatically. SORETRAK also publishes GTFS-Realtime,
-unused so far.
+SNCFT's own GTFS dataset has no files uploaded, so `feeds/sncft-sahel/` is
+hand-built (see below). The TRANSTU feed is a 2019 pilot — métro lines 2–6 and
+the bus network are absent, and its two schedule-less routes (ligne2, ligne28)
+are dropped automatically. SORETRAK also publishes GTFS-Realtime, unused so far.
+
+## Hand-authored feed: `feeds/sncft-sahel/`
+
+The Métro du Sahel (Sousse — Monastir — Mahdia) has no machine-readable
+schedule anywhere, so the official été 2026 timetable poster was transcribed
+into a minimal GTFS (station list from the portal's "Cartographie des stations
+du Banlieue sahel" CSV; provenance and method in `build.mjs`). Regenerate and
+import with:
+
+```sh
+cd feeds/sncft-sahel
+node build.mjs
+SUPABASE_ACCESS_TOKEN=sbp_... node ../../index.mjs --file sncft-sahel.gtfs.zip --prefix sncft-sahel
+```
+
+## Converted feed: STS (`sts-convert.mjs`)
+
+STS publishes a `.zip` that is actually a RAR v4 of UTF-16 tab-separated
+files — GTFS-shaped but broken (misspelled headers, `DD/MM/YYYY` dates,
+`stop-times.txt` filename, no stop coordinates, Arabic-only names).
+`sts-convert.mjs` repairs all of that and joins coordinates + Latin names for
+the scheduled stops from the Référentiel National d'Arrêts (the mapping table
+lives in the converter). Only 16 of the feed's 265 routes carry trips; the
+schedules date from 2016.
+
+```sh
+# extract the RAR first (bsdtar handles it): tar -xf sts.zip
+node sts-convert.mjs --dir <extracted STS dir> --out sts.gtfs.zip
+SUPABASE_ACCESS_TOKEN=sbp_... node index.mjs --file sts.gtfs.zip --prefix sts
+```
 
 ## What gets lost in translation
 

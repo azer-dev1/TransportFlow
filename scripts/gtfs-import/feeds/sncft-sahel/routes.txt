@@ -1,0 +1,3 @@
+route_id,agency_id,route_short_name,route_long_name,route_type
+MS-S,SNCFT,Métro du Sahel,Sousse → Monastir → Mahdia,2
+MS-N,SNCFT,Métro du Sahel,Mahdia → Monastir → Sousse,2
