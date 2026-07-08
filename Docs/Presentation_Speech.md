@@ -230,7 +230,8 @@ Postgres — timezone-correct.
 
 ## Slide 14 — Engineering practice (40s) [12:05] ✂ *(cut for 10-min slot: skip entirely, the slide speaks for itself — saves 40s)*
 
-Briefly, how it was built. Thirteen reviewed pull requests to a protected master.
+Briefly, how it was built. Every feature landed as a reviewed pull request to a
+protected master branch.
 Types are generated from the live database schema, so a schema change that would
 break a screen fails compilation — not the demo. Version 1.5.0 is a production
 build, and day-to-day fixes ship over the air: a fix reaches installed phones on
