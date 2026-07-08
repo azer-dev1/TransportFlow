@@ -235,7 +235,7 @@ Postgres, timezone-correct.
 ## Slide 14 — Engineering practice
 
 **ON SLIDE:**
-- 13 reviewed PRs to a protected master · conventional history
+- Every feature a reviewed PR to a protected master · conventional history
 - Typed end-to-end: generated DB types → typed queries → typed routes
 - Production build **1.5.0** · JS ships over-the-air on relaunch (EAS Update)
 - Free-tier ops: scheduled keep-alive, zero hosting cost
