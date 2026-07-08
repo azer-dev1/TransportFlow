@@ -9,7 +9,7 @@ Built as a single React Native (Expo) codebase talking **directly to Supabase** 
 no custom API server. Authorization lives in Postgres (Row-Level Security + column grants),
 and the only server-side code is two small Edge Functions.
 
-**Current version: 1.3.0** (Expo SDK 57, React Native 0.86, supabase-js v2).
+**Current version: 1.5.0** (Expo SDK 57, React Native 0.86, supabase-js v2).
 
 ---
 
@@ -26,8 +26,8 @@ and the only server-side code is two small Edge Functions.
   no refresh needed.
 - **Nearby stops** — foreground location + `nearby_stops` RPC (earthdistance, 3 km
   radius), shown on a map and as a list with distances and serving-line chips.
-- **Maps** — MapLibre with OpenFreeMap tiles (no API key, no billing) for the line route
-  and nearby-stops views.
+- **Maps** — Google Maps on Android / Apple Maps on iOS (react-native-maps) for the line
+  route and nearby-stops views.
 - **Favorites** — star any line or stop (optimistic toggles); a per-favorite mute bell
   keeps it starred but excludes it from notifications.
 - **Notifications** — durable in-app notification list with unread styling, a live unread
@@ -70,7 +70,7 @@ is a safe no-op until both secrets are configured.
 ```
 +---------------------------+         REST / Realtime (RLS-enforced)
 |  Mobile app (Expo, RN)    | <------------------------------------+
-|  expo-router · MapLibre   |                                      |
+|  expo-router · RN Maps    |                                      |
 +---------------------------+                                      v
                                                     +------------------------------+
                                                     |  Supabase (hosted)           |
@@ -98,7 +98,10 @@ Key decisions (deviations from the original blueprint in `Docs/`):
   wall-clock times, ISO weekday sets) are materialized into concrete `trips` by a nightly
   pg_cron job (`materialize_trips`); another job marks trips `completed` after their last
   stop. Old notifications are pruned by a retention job.
-- **MapLibre + OpenFreeMap** instead of Google Maps (no API key or billing).
+- **Google Maps (react-native-maps)** — the Android API key is injected at build time
+  from `google-services.json` by `mobile/app.config.js` (override with
+  `GOOGLE_MAPS_ANDROID_API_KEY`). Versions 1.2.0–1.4.0 shipped MapLibre + OpenFreeMap
+  while GCP billing was unavailable; 1.5.0 restored Google Maps.
 - **Plain StyleSheet + theme tokens** (`mobile/src/lib/theme.ts`) instead of NativeWind.
 
 ## Repository layout
@@ -123,7 +126,7 @@ supabase/
   seed.sql                  demo network + local-only Vault wiring
 scripts/gtfs-import/        import a real GTFS feed into the app's model
 .github/workflows/          free-tier keep-alive ping (Mon+Thu)
-Docs/                       original analysis & blueprint (historical, see as-built note)
+Docs/                       as-built docs, devlog, presentation, original analysis & blueprint
 ```
 
 ## Data model (Postgres)
@@ -187,16 +190,20 @@ Notes:
   `cd mobile && npx eas-cli update --channel preview --message "..."` — updates download in
   the background and apply on next launch. A new APK is only needed when native modules or
   native config change (runtime version follows `appVersion`).
-- Push notifications require FCM credentials on Android (`eas credentials`) and a real
-  device build.
+- Android push delivery uses FCM V1 (a Firebase service-account key is configured on EAS
+  via `eas credentials`) and needs a real device build.
+- Auth emails (signup confirmation, password recovery) are sent through custom SMTP
+  (Gmail) configured on the hosted Supabase project; signup email confirmation is ON.
 - A scheduled GitHub Action pings the REST API twice a week so the Supabase free-tier
   project never pauses (runs from the default branch; needs the `SUPABASE_ANON_KEY` secret).
 
 ## Importing real network data
 
 `scripts/gtfs-import` maps any standard GTFS feed onto the app's model (dominant stop
-sequence per route, weekly patterns; see its README for what's simplified). The currently
-imported network is **Mouv'enbus** (CA Provence Verte, France, Licence Ouverte v2.0).
+sequence per route, weekly patterns; see its README for what's simplified). The imported
+network is **Tunisian** (open data from catalogue-data.transport.tn): TRANSTU (Tunis
+métro + TGM), SORETRAK (Kairouan), SNTRI (intercity), Métro du Sahel, and STS (Sousse) —
+78 lines / 474 stops, imported with per-feed `--prefix` namespaces.
 
 ```sh
 cd scripts/gtfs-import && npm install
@@ -206,6 +213,11 @@ SUPABASE_ACCESS_TOKEN=sbp_... node index.mjs --url <gtfs-url>   # apply to hoste
 
 ## Documentation
 
+- `Docs/TransportFlow_Technical_Documentation.md` — **as-built system documentation**
+  (architecture, data model, fan-out pipeline, ops).
+- `Docs/DEVLOG.md` — chronological development log.
+- `Docs/Presentation_Slides.md` / `Docs/Presentation_Speech.md` /
+  `Docs/TransportFlow_Slides.pptx` — project presentation deck and speaker notes.
 - `Docs/TransportFlow_Analysis.md` — original requirements analysis.
 - `Docs/TransportFlow_Technical_Blueprint.md` — original planning blueprint (historical;
   the top of the file lists where the as-built system deviates).

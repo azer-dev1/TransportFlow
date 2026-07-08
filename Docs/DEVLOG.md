@@ -261,15 +261,41 @@ Testing was chained to `npx expo start` on the dev machine's Wi-Fi. Fix:
   config change. The dev-client + `expo start` flow still exists for hot
   reload sessions.
 
+## Phase 12 — Gap-closing, maps, brand, Tunisian data, release 1.4.0 (2026-07-04..05)
+
+- **Close-gaps (PR #7)**: first admin bootstrapped, PKCE password-reset deep link
+  (`transportflow://reset-password`), `delete-account` Edge Function, staff-attribution
+  FKs made `ON DELETE SET NULL` (account deletion keeps history).
+- **Maps + brand (PR #10)**: nearby-stops map and line route map. Google Maps rendered
+  black (no GCP billing account at the time), so maps shipped on **MapLibre +
+  OpenFreeMap**. Brand identity: logo, adaptive icon, splash.
+- **Tunisian network (PRs #9, #11)**: replaced the French demo feed with open data from
+  catalogue-data.transport.tn — TRANSTU (Tunis métro + TGM), SORETRAK (Kairouan), SNTRI
+  (intercity), then Métro du Sahel (hand-authored été 2026 feed) and STS Sousse (repaired
+  2016 pseudo-GTFS): **78 lines / 474 stops**, per-feed `--prefix` namespaces.
+- **Release 1.4.0 (PR #12)**: first production build; FCM V1 service-account key
+  uploaded to EAS (real Android push delivery).
+
+## Phase 13 — Back on Google services (2026-07-08)
+
+- **Google Maps restored (PR #13, v1.5.0)**: billing account fixed, so the MapLibre
+  detour was reverted — react-native-maps 1.27.2, Android key injected from
+  `google-services.json` by `app.config.js`. Two non-obvious unblocks: *Maps SDK for
+  Android* had to be added to the Firebase Android API key's **API allowlist** (billing +
+  enabled API alone still render black), and local `gradlew assembleRelease` on a 16 GB
+  machine needs `-PreactNativeArchitectures=arm64-v8a` plus a bigger daemon
+  (`-Xmx4096m -XX:MaxMetaspaceSize=1536m`) or clang/KSP die of memory. Verified on device.
+- **Custom SMTP (Gmail)**: auth emails now go out via smtp.gmail.com:465 with an app
+  password — delivers to any address, template editing unlocked, email rate limit 60/hr.
+  `mailer_autoconfirm` flipped back **off**, so signups require confirmation again.
+
 ## Where things stand / what's next
 
-- PR #1 (`feat/notification-webhook`) and PR #2 (`feat/mobile-auth`, stacked on #1)
-  merged to master 2026-07-03 — everything above is on master.
-- **FCM V1 credentials** (`eas credentials`) are still needed before Android push
-  notifications actually deliver to the phone.
-- Nearby/map view (the one Phase 7 surface still without UI — needs a map
-  library + location permission, so it's its own chunk).
-- Later: shareable `preview` APK builds, then Play Store via the `production` profile.
+- Everything above is merged to master (latest: PR #13, 2026-07-08). App version 1.5.0.
+- All Google services are live: Maps (billing + SDK + key allowlist), FCM V1 push,
+  Gmail SMTP for auth email.
+- Next: a `production` EAS build of 1.5.0, then optionally the Play Store
+  (Play Console account + `eas submit`), and branding the auth email templates.
 
 ## Gotchas worth remembering
 

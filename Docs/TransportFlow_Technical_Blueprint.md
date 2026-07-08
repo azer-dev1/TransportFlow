@@ -19,8 +19,11 @@
 > - **Push fan-out is Postgres → pg_net webhook → `notify-trip-update` Edge Function →
 >   Expo Push**, not an Express listener. Account deletion is a second Edge Function.
 > - **Styling** uses plain StyleSheet + shared theme tokens, not NativeWind. **Maps** use
->   MapLibre + OpenFreeMap tiles. Network data comes from a **GTFS importer**
->   (`scripts/gtfs-import`) rather than hand-seeded demo rows.
+>   react-native-maps (Google Maps on Android, Apple Maps on iOS; versions 1.2.0–1.4.0
+>   temporarily shipped MapLibre + OpenFreeMap while GCP billing was unavailable). Network
+>   data comes from a **GTFS importer** (`scripts/gtfs-import`) rather than hand-seeded
+>   demo rows — the live catalog is Tunisian open data (TRANSTU, SORETRAK, SNTRI, Métro
+>   du Sahel, STS).
 > - The Vitest/Supertest/Maestro testing stack (Part 9) was not adopted; there is no
 >   Express app to test and verification has been manual/on-device.
 
