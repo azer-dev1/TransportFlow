@@ -1,28 +1,15 @@
-import {
-  Camera,
-  GeoJSONSource,
-  Layer,
-  Map as MapLibreMap,
-  Marker,
-  UserLocation,
-  type InitialViewState,
-} from '@maplibre/maplibre-react-native';
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 
-import { colors, fontSize, radii, spacing } from '@/lib/theme';
-
-// OpenFreeMap: keyless, no billing, production use allowed. OSM's Tunisia
-// coverage is what makes this viable — to change the look swap the style,
-// not the provider (also: /styles/positron, /styles/bright).
-const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+import { colors, radii } from '@/lib/theme';
 
 export type MapStop = {
   id: string;
   name: string;
   latitude: number;
   longitude: number;
-  /** shown after the name in the tap label, e.g. "450 m" or "+12 min" */
+  /** marker callout second line, e.g. "450 m" or "+12 min" */
   description?: string;
 };
 
@@ -34,24 +21,27 @@ type Props = {
   height?: number;
 };
 
-/** Initial camera framing every stop ([lng, lat] world, per GeoJSON). */
-function viewFor(stops: MapStop[]): InitialViewState {
-  if (stops.length === 1) {
-    return { center: [stops[0].longitude, stops[0].latitude], zoom: 14 };
-  }
+/** Smallest region containing every stop, with breathing room. */
+function regionFor(stops: MapStop[]) {
   const lats = stops.map((s) => s.latitude);
   const lngs = stops.map((s) => s.longitude);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
   return {
-    bounds: [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)],
-    padding: { top: 40, right: 40, bottom: 40, left: 40 },
+    latitude: (minLat + maxLat) / 2,
+    longitude: (minLng + maxLng) / 2,
+    latitudeDelta: Math.max((maxLat - minLat) * 1.4, 0.02),
+    longitudeDelta: Math.max((maxLng - minLng) * 1.4, 0.02),
   };
 }
 
 /**
- * Map of stops on MapLibre + OpenFreeMap tiles (no API key, no Google
- * billing). Tapping a marker names it in an overlay bar — v11 dropped the
- * old always-on callouts. Web gets the StopsMap.web.tsx placeholder instead;
- * the native module never enters that bundle.
+ * Map of stops — Apple Maps on iOS, Google Maps on Android (API key comes
+ * from the react-native-maps plugin in app.config.js). Web gets the
+ * StopsMap.web.tsx placeholder instead; react-native-maps never enters that
+ * bundle.
  */
 export function StopsMap({
   stops,
@@ -59,57 +49,34 @@ export function StopsMap({
   showsUserLocation = false,
   height = 240,
 }: Props) {
-  const [selected, setSelected] = useState<MapStop | null>(null);
-  const initialViewState = useMemo(() => (stops.length ? viewFor(stops) : null), [stops]);
-
-  const routeShape = useMemo(
-    () =>
-      ({
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'LineString',
-          coordinates: stops.map((s) => [s.longitude, s.latitude]),
-        },
-      }) as const,
-    [stops],
-  );
-
-  if (!initialViewState) return null;
+  const region = useMemo(() => (stops.length ? regionFor(stops) : null), [stops]);
+  if (!region) return null;
 
   return (
+    // Android's map view ignores borderRadius; clip it with a wrapper.
     <View style={[styles.frame, { height }]}>
-      <MapLibreMap style={StyleSheet.absoluteFill} mapStyle={STYLE_URL} attribution>
-        <Camera initialViewState={initialViewState} />
-        {showsUserLocation && <UserLocation />}
+      <MapView
+        style={StyleSheet.absoluteFill}
+        initialRegion={region}
+        showsUserLocation={showsUserLocation}
+      >
         {connected && stops.length > 1 && (
-          <GeoJSONSource id="route" data={routeShape}>
-            <Layer
-              id="route-line"
-              type="line"
-              paint={{ 'line-color': colors.primary, 'line-width': 3 }}
-              layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-            />
-          </GeoJSONSource>
+          <Polyline
+            coordinates={stops.map((s) => ({ latitude: s.latitude, longitude: s.longitude }))}
+            strokeColor={colors.primary}
+            strokeWidth={3}
+          />
         )}
         {stops.map((s) => (
           <Marker
             key={s.id}
-            lngLat={[s.longitude, s.latitude]}
-            onPress={() => setSelected((prev) => (prev?.id === s.id ? null : s))}
-          >
-            <View style={[styles.marker, selected?.id === s.id && styles.markerSelected]} />
-          </Marker>
+            coordinate={{ latitude: s.latitude, longitude: s.longitude }}
+            title={s.name}
+            description={s.description}
+            pinColor={colors.primary}
+          />
         ))}
-      </MapLibreMap>
-      {selected && (
-        <Pressable style={styles.label} onPress={() => setSelected(null)}>
-          <Text style={styles.labelName} numberOfLines={1}>
-            {selected.name}
-          </Text>
-          {selected.description && <Text style={styles.labelDetail}>{selected.description}</Text>}
-        </Pressable>
-      )}
+      </MapView>
     </View>
   );
 }
@@ -120,43 +87,5 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  marker: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-    borderWidth: 2.5,
-    borderColor: colors.onPrimary,
-    elevation: 2,
-  },
-  markerSelected: {
-    backgroundColor: colors.text,
-  },
-  label: {
-    position: 'absolute',
-    left: spacing.sm,
-    right: spacing.sm,
-    bottom: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  labelName: {
-    flex: 1,
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  labelDetail: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    fontVariant: ['tabular-nums'],
   },
 });
