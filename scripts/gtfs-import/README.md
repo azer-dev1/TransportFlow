@@ -8,7 +8,7 @@ trips are then materialized by the existing pg_cron job).
 
 ```sh
 cd scripts/gtfs-import
-npm install
+pnpm install
 
 # Preview: parse the feed and write gtfs-import.sql without touching the DB
 node index.mjs --file mouvenbus.zip --dry-run

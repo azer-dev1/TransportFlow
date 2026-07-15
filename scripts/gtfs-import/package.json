@@ -2,6 +2,7 @@
   "name": "gtfs-import",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.6.0",
   "description": "Import a GTFS feed into TransportFlow's lines/stops/line_stops/service_patterns",
   "scripts": {
     "import": "node index.mjs"

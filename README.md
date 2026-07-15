@@ -158,8 +158,8 @@ preview/production build profiles bake the URL and anon key via `eas.json`). A f
 stack is optional:
 
 ```sh
-npx supabase start        # local stack (Docker; heavy)
-npx supabase db reset     # replay migrations + seed
+pnpm supabase start       # local stack (Docker; heavy)
+pnpm supabase db reset    # replay migrations + seed
 ```
 
 Demo accounts (local seed): `rider-demo@transportflow.app` / `staff-demo@transportflow.app`
@@ -169,15 +169,18 @@ Mobile app:
 
 ```sh
 cd mobile
-npm install               # .npmrc handles the react peer-dep pin
-npx expo start            # requires the EAS development build installed on-device
+pnpm install
+pnpm exec expo start      # requires the EAS development build installed on-device
 ```
 
 Notes:
 - **Expo Go is not supported** (crashes on some devices; push is unavailable there anyway).
   Use the EAS development build.
+- The old `.npmrc` (`legacy-peer-deps`) is gone: it was npm-specific, and pnpm already
+  tolerates the unmet `react-dom` peer that Expo's transitive web packages declare.
+  `react` stays pinned at a single copy — verify with `pnpm why react` after dep changes.
 - After schema changes, regenerate types:
-  `npx supabase gen types typescript --local > mobile/src/lib/database.types.ts`
+  `pnpm supabase gen types typescript --local > mobile/src/lib/database.types.ts`
 - All colors/spacing come from `src/lib/theme.ts` — no hardcoded hex in screens.
 - Data fetching goes through `useSupabaseQuery` (loading/refreshing/error states,
   pull-to-refresh everywhere).
@@ -187,7 +190,7 @@ Notes:
 - **EAS Build** profiles: `development` (dev client), `preview` (internal APK,
   channel `preview`), `production` (auto-incrementing version).
 - **OTA updates (EAS Update)** are the day-to-day ship path for JS-only changes:
-  `cd mobile && npx eas-cli update --channel preview --message "..."` — updates download in
+  `cd mobile && pnpm dlx eas-cli update --channel preview --message "..."` — updates download in
   the background and apply on next launch. A new APK is only needed when native modules or
   native config change (runtime version follows `appVersion`).
 - Android push delivery uses FCM V1 (a Firebase service-account key is configured on EAS
@@ -206,7 +209,7 @@ métro + TGM), SORETRAK (Kairouan), SNTRI (intercity), Métro du Sahel, and STS 
 78 lines / 474 stops, imported with per-feed `--prefix` namespaces.
 
 ```sh
-cd scripts/gtfs-import && npm install
+cd scripts/gtfs-import && pnpm install
 node index.mjs --file feed.zip --dry-run              # preview SQL
 SUPABASE_ACCESS_TOKEN=sbp_... node index.mjs --url <gtfs-url>   # apply to hosted project
 ```

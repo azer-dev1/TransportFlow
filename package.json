@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "TransportFlow monorepo tooling (mobile app is in /mobile)",
+  "packageManager": "pnpm@11.6.0",
   "scripts": {
     "supabase": "supabase"
   },
