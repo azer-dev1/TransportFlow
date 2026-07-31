@@ -299,8 +299,10 @@ Testing was chained to `npx expo start` on the dev machine's Wi-Fi. Fix:
 
 ## Gotchas worth remembering
 
-- `mobile/.npmrc` has `legacy-peer-deps=true` — an upstream react/react-dom peer
-  conflict; don't remove it.
+- The project uses **pnpm**, not npm. The old npm-specific `mobile/.npmrc`
+  (`legacy-peer-deps=true`) was removed in the pnpm migration — pnpm tolerates the
+  unmet `react-dom` peer that Expo's transitive web packages declare. `react` must
+  stay a single copy; verify with `pnpm why react` after dependency changes.
 - Regenerate DB types after schema changes:
   `npx supabase gen types typescript --local > mobile/src/lib/database.types.ts`
   (or `--project-id cxekufirfbjoieztiqbz` against hosted).

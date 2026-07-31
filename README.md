@@ -13,6 +13,25 @@ and the only server-side code is two small Edge Functions.
 
 ---
 
+## Screenshots
+
+Captured on-device from the 1.5.0 production build, against the live Tunisian network.
+
+| Home &amp; search | Typo-tolerant search | Line detail |
+|:---:|:---:|:---:|
+| ![Home](Docs/screenshots/home.png) | ![Search](Docs/screenshots/search.png) | ![Line detail](Docs/screenshots/line-detail.png) |
+| Lines across five networks | `cartage` → Carthage stops (pg_trgm) | Route map + ordered stop timeline |
+
+| Live trip | Nearby stops | Favorites |
+|:---:|:---:|:---:|
+| ![Trip](Docs/screenshots/trip-live.png) | ![Nearby](Docs/screenshots/nearby.png) | ![Favorites](Docs/screenshots/favorites.png) |
+| Per-stop ETAs + staff report card | 3 km radius, distances + serving lines | Stars with per-favorite mute bells |
+
+The amber-bordered card on the trip screen is a staff-only surface — it renders inline in
+the rider UI and is gated by role in the UI and, authoritatively, by RLS.
+
+---
+
 ## Features
 
 ### Riders
@@ -51,15 +70,18 @@ and the only server-side code is two small Edge Functions.
   the UI and — authoritatively — by RLS.
 
 ### Notification fan-out (no app server)
-```
-staff INSERT into trip_updates (or service_alerts)
-  → apply_trip_update()            trigger syncs trips' current-state columns
-  → notify_*_webhook()             trigger POSTs the row via pg_net
-  → notify-trip-update             Edge Function (service_role):
-       • finds riders with an unmuted favorite on the line or a stop it serves
-       • INSERTs a durable notifications row per rider
-       • sends Expo push to registered devices (best-effort; respects quiet hours)
-```
+
+One staff INSERT drives everything below — trip state, live screens, durable
+notifications and pushes:
+
+![Fan-out from a single staff report](Docs/slides-assets/fanout.png)
+
+In code: `apply_trip_update()` syncs the trip's current-state columns, `notify_*_webhook()`
+POSTs the row via pg_net, and the `notify-trip-update` Edge Function (service_role) finds
+riders with an unmuted favorite on the line or a stop it serves, INSERTs a durable
+`notifications` row per rider, and sends Expo push to registered devices (best-effort,
+respecting quiet hours).
+
 The webhook URL and key live in Supabase Vault (no secrets in schema or git); the trigger
 is a safe no-op until both secrets are configured.
 
@@ -67,25 +89,12 @@ is a safe no-op until both secrets are configured.
 
 ## Architecture
 
-```
-+---------------------------+         REST / Realtime (RLS-enforced)
-|  Mobile app (Expo, RN)    | <------------------------------------+
-|  expo-router · RN Maps    |                                      |
-+---------------------------+                                      v
-                                                    +------------------------------+
-                                                    |  Supabase (hosted)           |
-                                                    |  Postgres + Auth + Realtime  |
-                                                    |  · RLS + column grants       |
-                                                    |  · triggers + pg_net webhook |
-                                                    |  · pg_cron scheduling        |
-                                                    |  · Edge Functions:           |
-                                                    |     notify-trip-update       |
-                                                    |     delete-account           |
-                                                    +--------------+---------------+
-                                                                   |
-                                                                   v
-                                                       Expo Push Service → devices
-```
+![System architecture — the app talks straight to Postgres; RLS is the gatekeeper](Docs/slides-assets/architecture.png)
+
+There is no application server in that picture. The app holds only the public anon key
+plus the signed-in user's JWT; Postgres itself decides what each request may read or
+write. Alongside the database, Supabase provides Auth, Realtime, pg_net webhooks, pg_cron
+scheduling, and the two Edge Functions (`notify-trip-update`, `delete-account`).
 
 Key decisions (deviations from the original blueprint in `Docs/`):
 - **No Express/Node API server.** The app uses the anon key + user JWT; every table is
