@@ -38,3 +38,12 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Office lock files
+~$*
+
+# Project documents are kept locally, not published — the README is the repo's
+# documentation. Only the images it renders stay tracked.
+Docs/*
+!Docs/screenshots/
+!Docs/slides-assets/

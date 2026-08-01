@@ -96,7 +96,7 @@ plus the signed-in user's JWT; Postgres itself decides what each request may rea
 write. Alongside the database, Supabase provides Auth, Realtime, pg_net webhooks, pg_cron
 scheduling, and the two Edge Functions (`notify-trip-update`, `delete-account`).
 
-Key decisions (deviations from the original blueprint in `Docs/`):
+Key decisions (deviations from the original blueprint):
 - **No Express/Node API server.** The app uses the anon key + user JWT; every table is
   protected by RLS and table/column grants. Staff-only writes are RLS policies, not
   middleware. Server-side logic that genuinely needs privileges is in Edge Functions.
@@ -135,7 +135,7 @@ supabase/
   seed.sql                  demo network + local-only Vault wiring
 scripts/gtfs-import/        import a real GTFS feed into the app's model
 .github/workflows/          free-tier keep-alive ping (Mon+Thu)
-Docs/                       as-built docs, devlog, presentation, original analysis & blueprint
+Docs/screenshots/           on-device captures and diagrams used in this README
 ```
 
 ## Data model (Postgres)
@@ -225,13 +225,9 @@ SUPABASE_ACCESS_TOKEN=sbp_... node index.mjs --url <gtfs-url>   # apply to hoste
 
 ## Documentation
 
-- `Docs/TransportFlow_Technical_Documentation.md` — **as-built system documentation**
-  (architecture, data model, fan-out pipeline, ops).
-- `Docs/DEVLOG.md` — chronological development log.
-- `Docs/Presentation_Slides.md` / `Docs/Presentation_Speech.md` /
-  `Docs/TransportFlow_Slides.pptx` — project presentation deck and speaker notes.
-- `Docs/TransportFlow_Analysis.md` — original requirements analysis.
-- `Docs/TransportFlow_Technical_Blueprint.md` — original planning blueprint (historical;
-  the top of the file lists where the as-built system deviates).
+This README is the project's documentation — architecture, data model, security model,
+development and build steps are all above. Two components document themselves in more
+detail:
+
 - `supabase/functions/notify-trip-update/README.md` — fan-out function config & local testing.
 - `scripts/gtfs-import/README.md` — GTFS import details and limitations.
