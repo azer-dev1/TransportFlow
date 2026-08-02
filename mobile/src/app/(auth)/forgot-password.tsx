@@ -66,7 +66,6 @@ export default function ForgotPasswordScreen() {
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
-        onSubmitEditing={() => canSubmit && sendResetEmail()}
       />
 
       {error && <ErrorText>{error}</ErrorText>}

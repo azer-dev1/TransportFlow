@@ -12,13 +12,26 @@ import { supabase } from './supabase';
 // module completely untouched unless we're in a real build.
 const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
+/**
+ * Android channel carrying every push we send. Channels are immutable after
+ * creation (only name/description can change), so fixing the settings means
+ * a NEW id — the old 'default' channel below shipped with vibration off and
+ * could never be repaired in place. Bump the suffix if these ever change again.
+ */
+export const ANDROID_CHANNEL_ID = 'trip-updates-v2';
+
 if (!isExpoGo) {
   // Show pushes as banners even while the app is foregrounded.
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
       shouldShowList: true,
-      shouldPlaySound: false,
+      // Must stay true for foreground pushes to vibrate: expo-notifications
+      // derives *both* sound and vibration from this one flag, and when both
+      // come out false it calls setSilent(true) on the notification, which
+      // overrides the channel. With it false, a foregrounded push was
+      // completely silent — no sound, no buzz.
+      shouldPlaySound: true,
       shouldSetBadge: false,
     }),
   });
@@ -52,10 +65,27 @@ async function registerPushToken(userId: string): Promise<void> {
   }
 
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
+    // enableVibrate/vibrationPattern are NOT on by default for a channel
+    // created this way, and the old 'default' channel set neither — which is
+    // why pushes never buzzed. The Edge Function targets this id explicitly;
+    // without a channelId in the payload the OS falls back to Expo's own
+    // "Miscellaneous" channel and our settings here are ignored entirely.
+    // No `sound` key on purpose. It names a custom sound *resource* bundled in
+    // the app, not a mode — passing 'default' made expo-notifications hunt for
+    // a raw resource called "default" and log "Custom sound 'default' not found
+    // in native app". Omitting it leaves the channel on Android's own default
+    // notification sound, which is what we wanted.
+    await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
       name: 'Trip updates',
-      importance: Notifications.AndroidImportance.HIGH,
+      importance: Notifications.AndroidImportance.MAX,
+      enableVibrate: true,
+      vibrationPattern: [0, 250, 250, 250],
     });
+    // Tidy up dead predecessors so users don't see duplicates in Android's
+    // per-channel notification settings. 'trip-updates-v1' shipped with the
+    // bad sound key and can't be repaired in place — channels are immutable.
+    await Notifications.deleteNotificationChannelAsync('default');
+    await Notifications.deleteNotificationChannelAsync('trip-updates-v1');
   }
 
   try {

@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 
-import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorText } from '@/components/ErrorText';
@@ -122,7 +121,7 @@ export default function LinesScreen() {
         </Row>
       </Link>
 
-      {isLoading && <Spinner style={styles.spinner} />}
+      {(isLoading || isRefreshing) && <Spinner style={styles.spinner} />}
       {error && <ErrorText style={styles.errorPadded}>Lines failed to load: {error}</ErrorText>}
 
       {results ? (
@@ -149,7 +148,7 @@ export default function LinesScreen() {
               <View style={styles.stopsSection}>
                 <SectionTitle>Stops</SectionTitle>
                 {results.stops.map((stop) => (
-                  <Card key={stop.id} style={styles.stopCard}>
+                  <View key={stop.id} style={styles.stopCard}>
                     <View style={styles.stopNameRow}>
                       <Ionicons name="location-outline" size={16} color={colors.textMuted} />
                       <Text style={styles.stopName}>{stop.name}</Text>
@@ -163,7 +162,7 @@ export default function LinesScreen() {
                         ))}
                       </View>
                     )}
-                  </Card>
+                  </View>
                 ))}
               </View>
             ) : null
@@ -175,8 +174,6 @@ export default function LinesScreen() {
           keyExtractor={(line) => line.id}
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
-          onRefresh={refetch}
-          refreshing={isRefreshing}
           renderItem={({ item }) => lineRow(item)}
           ListEmptyComponent={
             !isLoading && !error ? <EmptyState>No lines yet.</EmptyState> : null
@@ -203,10 +200,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: fontSize.md,
   },
+  // A Row, but an action rather than a list item: it keeps a surface and
+  // drops the divider Row now carries.
   nearbyButton: {
     marginHorizontal: spacing.lg,
-    marginTop: 10,
+    marginTop: spacing.md,
     borderRadius: radii.md,
+    backgroundColor: colors.primarySurface,
+    borderBottomWidth: 0,
     paddingVertical: 10,
     paddingHorizontal: 14,
     justifyContent: 'center',
@@ -223,9 +224,10 @@ const styles = StyleSheet.create({
   errorPadded: {
     padding: spacing.lg,
   },
+  // No gap: rows carry their own divider and must meet.
   list: {
-    padding: spacing.lg,
-    gap: 10,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   rowBody: {
     flex: 1,
@@ -241,11 +243,14 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   stopsSection: {
-    gap: 10,
-    marginTop: 6,
+    marginTop: spacing.xl,
   },
+  // Flattened from Card: these are list items, not distinct objects.
   stopCard: {
     gap: 10,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   stopNameRow: {
     flexDirection: 'row',

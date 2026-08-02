@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
 import { ErrorText } from '@/components/ErrorText';
 import { PasswordInput } from '@/components/PasswordInput';
 import { Spinner } from '@/components/Spinner';
@@ -90,7 +89,7 @@ function QuietHoursCard({ userId }: { userId: string }) {
   if (loading) return <Spinner style={styles.spinner} />;
 
   return (
-    <Card>
+    <View style={styles.section}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>Quiet hours</Text>
         <Switch
@@ -150,7 +149,7 @@ function QuietHoursCard({ userId }: { userId: string }) {
           />
         </>
       )}
-    </Card>
+    </View>
   );
 }
 
@@ -257,7 +256,7 @@ function ChangePasswordCard() {
   const canSave = password.length > 0 && confirm.length > 0 && !saving;
 
   return (
-    <Card>
+    <View style={styles.section}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>Password</Text>
         <Pressable onPress={() => setOpen(!open)}>
@@ -291,7 +290,7 @@ function ChangePasswordCard() {
           />
         </>
       )}
-    </Card>
+    </View>
   );
 }
 
@@ -343,14 +342,14 @@ function DeleteAccountButton() {
  */
 function UpdatesCard() {
   return (
-    <Card>
+    <View style={styles.section}>
       <Text style={styles.cardTitle}>App version</Text>
       <Text style={styles.cardHint}>
         Channel: {Updates.channel ?? 'none'} · runtime {Updates.runtimeVersion ?? '—'}
         {'\n'}
         Running: {Updates.isEmbeddedLaunch ? 'built-in bundle' : `update ${Updates.updateId ?? '?'}`}
       </Text>
-    </Card>
+    </View>
   );
 }
 
@@ -365,7 +364,7 @@ export default function ProfileScreen() {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <Card>
+      <View style={[styles.section, styles.sectionFirst]}>
         {profile ? (
           <NameEditor currentName={profile.full_name} onSaved={refreshProfile} />
         ) : (
@@ -378,7 +377,7 @@ export default function ProfileScreen() {
           </View>
         )}
         <Text style={styles.email}>{session?.user.email}</Text>
-      </Card>
+      </View>
 
       <ChangePasswordCard />
 
@@ -399,10 +398,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
+  // No gap: sections carry their own padding and top divider.
   content: {
-    padding: spacing.xl,
-    gap: spacing.xl,
+    paddingHorizontal: spacing.xl,
     flexGrow: 1,
+  },
+  /**
+   * A settings group. Flat like everything else — a divider and real spacing
+   * separate groups, so nothing here needs a box around it.
+   */
+  section: {
+    paddingVertical: spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: spacing.sm,
+  },
+  /** Nothing above it to divide from. */
+  sectionFirst: {
+    borderTopWidth: 0,
   },
   cardHeader: {
     flexDirection: 'row',

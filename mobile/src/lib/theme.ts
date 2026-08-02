@@ -5,11 +5,15 @@
  * Palette is Untitled UI-derived (grays + blue 700 primary).
  */
 export const colors = {
-  /** screen background */
-  bg: '#f8fafc',
-  /** cards, rows, inputs */
+  /**
+   * Screen background. White on purpose: the old grey existed only to make
+   * bordered cards pop, and rows are flat now — grey behind flat rows just
+   * reads as an unfinished component gallery.
+   */
+  bg: '#ffffff',
+  /** cards, inputs */
   surface: '#ffffff',
-  /** hairline borders on cards and rows */
+  /** hairline row dividers, card borders */
   border: '#eaecf0',
   /** stronger borders: inputs, outlined buttons, pills */
   borderStrong: '#d0d5dd',

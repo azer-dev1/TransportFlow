@@ -52,7 +52,7 @@ export default function SignUpScreen() {
         <Text style={styles.title}>Confirm your email</Text>
         <Text style={styles.hint}>
           We sent a confirmation link to {email.trim()}. Open it on this phone, then sign in with
-          your new password.
+          the password you just chose.
         </Text>
         <Link href="/sign-in" style={styles.footerLink}>
           Back to sign in
@@ -87,7 +87,6 @@ export default function SignUpScreen() {
         autoComplete="new-password"
         value={password}
         onChangeText={setPassword}
-        onSubmitEditing={() => canSubmit && signUp()}
       />
 
       {error && <ErrorText>{error}</ErrorText>}
@@ -121,6 +120,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xxl,
     fontWeight: '700',
     color: colors.text,
+    textAlign: 'center',
     marginBottom: spacing.md,
   },
   hint: {

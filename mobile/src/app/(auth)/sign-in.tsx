@@ -52,7 +52,6 @@ export default function SignInScreen() {
         autoComplete="current-password"
         value={password}
         onChangeText={setPassword}
-        onSubmitEditing={() => canSubmit && signIn()}
       />
 
       {error && <ErrorText>{error}</ErrorText>}
@@ -85,6 +84,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xxl,
     fontWeight: '700',
     color: colors.text,
+    textAlign: 'center',
     marginBottom: spacing.md,
   },
   forgotLink: {

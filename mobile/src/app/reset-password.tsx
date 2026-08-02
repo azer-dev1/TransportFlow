@@ -87,7 +87,6 @@ export default function ResetPasswordScreen() {
             autoComplete="new-password"
             value={confirm}
             onChangeText={setConfirm}
-            onSubmitEditing={() => canSubmit && submit()}
           />
 
           {error && <ErrorText>{error}</ErrorText>}

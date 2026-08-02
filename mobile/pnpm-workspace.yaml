@@ -1,0 +1,16 @@
+# pnpm settings live here, not .npmrc — pnpm 11 no longer reads node-linker
+# from .npmrc (pnpm config get node-linker returns undefined there).
+#
+# Flat node_modules instead of pnpm's .pnpm/<pkg>@<ver>_<hash>/ store. Not a
+# style preference: the Android native build shells out to CMake, whose
+# CMAKE_OBJECT_PATH_MAX is 250 chars on Windows (independent of the OS
+# LongPathsEnabled setting, which is already on). react-native-worklets'
+# object dir sits at 221 chars under the pnpm store before the object
+# filename is appended, so ninja can never stabilise build.ninja and
+# gradlew assembleRelease dies. Hoisting drops it to ~139.
+#
+# Only bites since the npm->pnpm migration (b77da7e, 2026-07-15): pnpm's
+# stricter tree actually installs react-native-reanimated/-worklets, which
+# expo-router depends on and npm had never materialised, so their C++ had
+# never been compiled locally before. EAS builds on Linux are unaffected.
+nodeLinker: hoisted

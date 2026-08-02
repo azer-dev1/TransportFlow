@@ -25,8 +25,8 @@ export function useSupabaseQuery<R extends { data: unknown; error: { message: st
     isLoading: true,
   });
   // isLoading covers the initial fetch (no data yet, show a spinner);
-  // isRefreshing covers refetch() re-runs (data on screen, feed it to a
-  // RefreshControl instead of blanking the list).
+  // isRefreshing covers refetch() re-runs — data is already on screen, so
+  // screens show the small Spinner above the list instead of blanking it.
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const queryRef = useRef(query);

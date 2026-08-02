@@ -97,7 +97,7 @@ export default function TripDetailScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ title: trip?.lines?.name ?? 'Trip' }} />
 
-      {tripLoading && <Spinner style={styles.spinner} />}
+      {(tripLoading || stopTimesRefreshing) && <Spinner style={styles.spinner} />}
       {tripError && <ErrorText style={styles.errorPadded}>Trip failed to load: {tripError}</ErrorText>}
 
       {trip && (
@@ -108,12 +108,6 @@ export default function TripDetailScreen() {
           // keyboardShouldPersistTaps: with the keyboard open, the first tap must
           // reach the report buttons instead of only dismissing the keyboard.
           keyboardShouldPersistTaps="handled"
-          refreshing={stopTimesRefreshing}
-          onRefresh={() => {
-            refetchTrip();
-            refetchStopTimes();
-            refetchHistory();
-          }}
           ListHeaderComponent={
             <View style={styles.headerBlock}>
               <Card>
@@ -124,7 +118,7 @@ export default function TripDetailScreen() {
               <StaffReportCard tripId={trip.id} />
 
               <SectionTitle style={styles.sectionTitle}>Stops</SectionTitle>
-              <Card style={styles.stopsCard}>
+              <View style={styles.stopsCard}>
                 {(stopTimes ?? []).map((st, index) => {
                   // Cancelled trips have no expected arrival; show the
                   // scheduled time (struck through via cancelledText).
@@ -144,19 +138,19 @@ export default function TripDetailScreen() {
                     </View>
                   );
                 })}
-              </Card>
+              </View>
 
               <SectionTitle style={styles.sectionTitle}>Updates</SectionTitle>
               {historyError && <ErrorText>Updates failed to load: {historyError}</ErrorText>}
             </View>
           }
           renderItem={({ item: update }) => (
-            <Card style={styles.updateRow}>
+            <View style={styles.updateRow}>
               <StatusBadge status={update.status} delayMinutes={update.delay_minutes} />
               <Text style={styles.updateMeta}>
                 {update.profiles?.full_name ?? 'Staff'} · {formatWhen(update.created_at)}
               </Text>
-            </Card>
+            </View>
           )}
           ListEmptyComponent={
             !historyError ? <EmptyState>No updates reported for this trip.</EmptyState> : null
@@ -178,9 +172,10 @@ const styles = StyleSheet.create({
   errorPadded: {
     padding: spacing.lg,
   },
+  // No gap: rows carry their own divider and must meet.
   list: {
-    padding: spacing.lg,
-    gap: 10,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   headerBlock: {
     gap: 10,
@@ -236,9 +231,12 @@ const styles = StyleSheet.create({
     color: colors.textFaint,
     textDecorationLine: 'line-through',
   },
+  // Flattened from Card: a list item, not a distinct object.
   updateRow: {
-    paddingVertical: spacing.md,
+    paddingVertical: 14,
     gap: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   updateMeta: {
     color: colors.textMuted,

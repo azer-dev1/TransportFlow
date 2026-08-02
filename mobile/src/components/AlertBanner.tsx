@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fontSize, radii, spacing } from '@/lib/theme';
 
@@ -27,14 +27,24 @@ const SEVERITY_STYLES: Record<
   },
 };
 
+/**
+ * onEnd/onDelete are the staff/admin retraction actions; riders get neither
+ * prop, so the footer row does not render for them at all.
+ */
 export function AlertBanner({
   title,
   body,
   severity,
+  onEnd,
+  onDelete,
+  busy = false,
 }: {
   title: string;
   body: string;
   severity: string;
+  onEnd?: () => void;
+  onDelete?: () => void;
+  busy?: boolean;
 }) {
   const s = SEVERITY_STYLES[severity] ?? SEVERITY_STYLES.info;
   return (
@@ -43,6 +53,25 @@ export function AlertBanner({
       <View style={styles.body}>
         <Text style={[styles.title, { color: s.fg }]}>{title}</Text>
         {!!body && <Text style={styles.text}>{body}</Text>}
+
+        {(onEnd || onDelete) && (
+          <View style={styles.actions}>
+            {onEnd && (
+              <Pressable onPress={onEnd} disabled={busy} hitSlop={8}>
+                <Text style={[styles.action, { color: s.fg }, busy && styles.actionDisabled]}>
+                  End now
+                </Text>
+              </Pressable>
+            )}
+            {onDelete && (
+              <Pressable onPress={onDelete} disabled={busy} hitSlop={8}>
+                <Text style={[styles.action, styles.delete, busy && styles.actionDisabled]}>
+                  Delete
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -67,5 +96,20 @@ const styles = StyleSheet.create({
   text: {
     color: colors.textBody,
     lineHeight: 19,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    marginTop: spacing.xs,
+  },
+  action: {
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+  },
+  delete: {
+    color: colors.danger,
+  },
+  actionDisabled: {
+    opacity: 0.5,
   },
 });
