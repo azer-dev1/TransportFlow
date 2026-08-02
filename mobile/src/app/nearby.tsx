@@ -45,9 +45,22 @@ function useNearbyStops() {
       return;
     }
     try {
-      const position = await Location.getCurrentPositionAsync({
+      // getCurrentPositionAsync asks for a *fresh* fix and throws
+      // E_LOCATION_UNAVAILABLE when the provider has none — common indoors on
+      // a cold GPS, and guaranteed on an emulator, where the fix you set lands
+      // on the gps provider while the fused one stays null. A slightly stale
+      // location beats an error screen, so fall back to whatever the OS last
+      // recorded (deliberately without maxAge: on an emulator the only fix
+      // available is often tens of minutes old).
+      let position = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
-      });
+      }).catch(() => null);
+      position ??= await Location.getLastKnownPositionAsync();
+      if (!position) {
+        throw new Error(
+          'No location fix yet. Move somewhere with a clearer signal, or wait a moment and try again.',
+        );
+      }
       const { data, error: rpcError } = await supabase.rpc('nearby_stops', {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
