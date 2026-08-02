@@ -3,7 +3,6 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useRef } from 'react';
 import {
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -73,9 +72,8 @@ export default function FavoritesScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refetch} />}
     >
-      {isLoading && <Spinner style={styles.spinner} />}
+      {(isLoading || isRefreshing) && <Spinner style={styles.spinner} />}
       {error && <ErrorText>Favorites failed to load: {error}</ErrorText>}
       {mutationError && <ErrorText>Change failed: {mutationError}</ErrorText>}
 
@@ -141,15 +139,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
+  // No gap: rows carry their own divider and must meet.
   content: {
-    padding: spacing.lg,
-    gap: 10,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   spinner: {
     marginTop: 32,
   },
+  // Labels need real air above them now that no card edge separates groups.
   sectionTitle: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
   },
   rowName: {
     flex: 1,

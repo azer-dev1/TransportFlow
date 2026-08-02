@@ -29,7 +29,10 @@ function RootNavigator() {
   }
 
   return (
-    <Stack>
+    // Instant screen changes, deliberately — not an oversight. The platform
+    // default transition was never chosen and read as noise on a utility app
+    // people open for a few seconds at a time.
+    <Stack screenOptions={{ animation: 'none' }}>
       <Stack.Protected guard={!!session}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="nearby" options={{ title: 'Nearby stops' }} />
@@ -49,7 +52,11 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <StatusBar style="auto" />
+      {/* "dark" = dark icons, not a dark bar. Must not be "auto": that follows
+          the *system* scheme, so on a phone in dark mode it painted the clock
+          and status icons white on our permanently light background, making
+          them invisible. The app is light-only, so pin it. */}
+      <StatusBar style="dark" />
       <RootNavigator />
     </AuthProvider>
   );

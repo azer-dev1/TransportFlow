@@ -1,12 +1,17 @@
 import { forwardRef } from 'react';
 import { Pressable, StyleSheet, View, type PressableProps, type ViewProps } from 'react-native';
 
-import { colors, radii, spacing } from '@/lib/theme';
+import { colors, spacing } from '@/lib/theme';
 
 /**
- * A horizontal list-row card. Pressable so it can be the child of
+ * A flat horizontal list row. Pressable so it can be the child of
  * `<Link asChild>` (which needs the forwarded ref); use `RowView` for
  * non-tappable rows so screen readers don't announce a button.
+ *
+ * Deliberately has no surface, border or radius: a list of twenty bordered
+ * boxes is forty horizontal lines competing with the content. One hairline
+ * divider between rows does the same grouping for a third of the noise.
+ * Lists that use these must not set a `gap`, or the dividers won't meet.
  */
 export const Row = forwardRef<View, PressableProps>(function Row({ style, ...props }, ref) {
   return (
@@ -31,13 +36,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   pressed: {
-    opacity: 0.7,
+    // Tint rather than fade: with no surface of its own, dropping opacity
+    // would wash out the text instead of reading as a press.
+    backgroundColor: colors.neutralSurface,
   },
 });

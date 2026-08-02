@@ -1,9 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { AlertBanner } from '@/components/AlertBanner';
-import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorText } from '@/components/ErrorText';
 import { Row } from '@/components/Row';
@@ -13,6 +13,7 @@ import { StaffAlertCard } from '@/components/StaffAlertCard';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Star } from '@/components/Star';
 import { StopsMap } from '@/components/StopsMap';
+import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { colors, fontSize, spacing } from '@/lib/theme';
 import { useFavorites } from '@/lib/use-favorites';
@@ -34,9 +35,14 @@ function departureTime(iso: string): string {
 
 export default function LineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { profile } = useAuth();
   const { isLineFavorite, isStopFavorite, toggleLine, toggleStop, mutationError } = useFavorites();
+  const isStaff = profile?.role === 'staff' || profile?.role === 'admin';
+  // id of the alert whose end/delete request is in flight, if any
+  const [pendingAlertId, setPendingAlertId] = useState<string | null>(null);
+  const [alertActionError, setAlertActionError] = useState<string | null>(null);
 
-  const { data: line, refetch: refetchLine } = useSupabaseQuery(
+  const { data: line } = useSupabaseQuery(
     () => supabase.from('lines').select('*').eq('id', id).single(),
     [id],
   );
@@ -54,7 +60,7 @@ export default function LineDetailScreen() {
     [id],
   );
 
-  const { data: lineStops, error: stopsError, refetch: refetchStops } = useSupabaseQuery(
+  const { data: lineStops, error: stopsError } = useSupabaseQuery(
     () =>
       supabase
         .from('line_stops')
@@ -68,7 +74,6 @@ export default function LineDetailScreen() {
     data: trips,
     error: tripsError,
     isLoading: tripsLoading,
-    refetch: refetchTrips,
     isRefreshing: tripsRefreshing,
   } = useSupabaseQuery(
     () =>
@@ -81,6 +86,39 @@ export default function LineDetailScreen() {
         .limit(15),
     [id],
   );
+
+  // "End now" keeps the row as history and just closes its window; "Delete"
+  // retracts it outright (RLS lets staff/admin do either — migration 11).
+  // Riders already notified keep their notifications row either way.
+  async function endAlert(alertId: string) {
+    setPendingAlertId(alertId);
+    setAlertActionError(null);
+    const { error } = await supabase
+      .from('service_alerts')
+      .update({ ends_at: new Date().toISOString() })
+      .eq('id', alertId);
+    setPendingAlertId(null);
+    if (error) setAlertActionError(error.message);
+    else refetchAlerts();
+  }
+
+  function confirmDeleteAlert(alertId: string, alertTitle: string) {
+    Alert.alert('Delete alert?', `"${alertTitle}" will be removed for all riders.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setPendingAlertId(alertId);
+          setAlertActionError(null);
+          const { error } = await supabase.from('service_alerts').delete().eq('id', alertId);
+          setPendingAlertId(null);
+          if (error) setAlertActionError(error.message);
+          else refetchAlerts();
+        },
+      },
+    ]);
+  }
 
   return (
     <View style={styles.container}>
@@ -98,23 +136,24 @@ export default function LineDetailScreen() {
         // keyboardShouldPersistTaps: with the keyboard open, the first tap must
         // reach Post alert instead of only dismissing the keyboard.
         keyboardShouldPersistTaps="handled"
-        refreshing={tripsRefreshing}
-        onRefresh={() => {
-          refetchLine();
-          refetchAlerts();
-          refetchStops();
-          refetchTrips();
-        }}
         ListHeaderComponent={
           <View style={styles.header}>
+            {/* Shown while an alert action refetches; there is no
+                pull-to-refresh on this screen. */}
+            {tripsRefreshing && <Spinner style={styles.spinner} />}
+
             {(alerts ?? []).map((alert) => (
               <AlertBanner
                 key={alert.id}
                 title={alert.title}
                 body={alert.body}
                 severity={alert.severity}
+                busy={pendingAlertId === alert.id}
+                onEnd={isStaff ? () => endAlert(alert.id) : undefined}
+                onDelete={isStaff ? () => confirmDeleteAlert(alert.id, alert.title) : undefined}
               />
             ))}
+            {alertActionError && <ErrorText>Alert change failed: {alertActionError}</ErrorText>}
 
             <StaffAlertCard lineId={id} onPosted={refetchAlerts} />
 
@@ -123,7 +162,10 @@ export default function LineDetailScreen() {
               stops={(lineStops ?? [])
                 .filter((ls) => ls.stops)
                 .map((ls) => ({
-                  id: ls.stops!.id,
+                  // line_stops row id, not the stop id: a loop route (e.g.
+                  // "CNR-ESSAIED-CNR") visits the same stop twice, and keying
+                  // markers by stop id gives React duplicate keys.
+                  id: ls.id,
                   name: ls.stops!.name,
                   latitude: ls.stops!.latitude,
                   longitude: ls.stops!.longitude,
@@ -137,7 +179,7 @@ export default function LineDetailScreen() {
             <SectionTitle style={styles.sectionTitle}>Stops</SectionTitle>
             {stopsError && <ErrorText>Stops failed to load: {stopsError}</ErrorText>}
             {mutationError && <ErrorText>Favorite change failed: {mutationError}</ErrorText>}
-            <Card style={styles.stopsCard}>
+            <View style={styles.stopsCard}>
               {(lineStops ?? []).map((ls, index) => (
                 <View key={ls.id} style={styles.stopRow}>
                   <View style={styles.stopMarkerColumn}>
@@ -157,7 +199,7 @@ export default function LineDetailScreen() {
                   )}
                 </View>
               ))}
-            </Card>
+            </View>
 
             <SectionTitle style={styles.sectionTitle}>Upcoming departures</SectionTitle>
             {tripsLoading && <Spinner style={styles.spinner} />}
@@ -191,9 +233,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
+  // No gap: rows carry their own divider and must meet.
   list: {
-    padding: spacing.lg,
-    gap: 10,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   header: {
     gap: 10,

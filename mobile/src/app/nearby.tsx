@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorText } from '@/components/ErrorText';
@@ -147,7 +146,7 @@ export default function NearbyScreen() {
         keyExtractor={(stop) => stop.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <Card style={styles.stopCard}>
+          <View style={styles.stopCard}>
             <View style={styles.stopHeader}>
               <Ionicons name="location-outline" size={18} color={colors.primary} />
               <Text style={styles.stopName}>{item.name}</Text>
@@ -162,7 +161,7 @@ export default function NearbyScreen() {
                 ))}
               </View>
             )}
-          </Card>
+          </View>
         )}
         ListEmptyComponent={<EmptyState>No stops within 3 km of your location.</EmptyState>}
       />
@@ -199,12 +198,17 @@ const styles = StyleSheet.create({
   listFlex: {
     flex: 1,
   },
+  // No gap: rows carry their own divider and must meet.
   list: {
-    padding: spacing.lg,
-    gap: 10,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
+  // Flattened from Card: a list item, not a distinct object.
   stopCard: {
     gap: 10,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   stopHeader: {
     flexDirection: 'row',

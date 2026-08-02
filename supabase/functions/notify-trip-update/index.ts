@@ -140,9 +140,21 @@ async function sendExpoPush(
   data: Record<string, string>,
 ): Promise<{ sent: number; staleTokens: string[] }> {
   // Expo tokens look like ExponentPushToken[xxxxxxxx]; skip anything else.
+  // channelId must match ANDROID_CHANNEL_ID in mobile/src/lib/notifications.ts
+  // — that channel is what carries sound + vibration. Omitting it drops the
+  // push onto Expo's fallback "Miscellaneous" channel instead, which the app
+  // cannot configure. priority high so a dozing device wakes for it.
   const messages = tokens
     .filter((t) => typeof t === "string" && t.startsWith("ExponentPushToken"))
-    .map((to) => ({ to, sound: "default", title, body, data }));
+    .map((to) => ({
+      to,
+      sound: "default",
+      channelId: "trip-updates-v2",
+      priority: "high",
+      title,
+      body,
+      data,
+    }));
   if (messages.length === 0) return { sent: 0, staleTokens: [] };
 
   let sent = 0;

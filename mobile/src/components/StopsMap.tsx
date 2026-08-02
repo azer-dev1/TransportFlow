@@ -59,6 +59,11 @@ export function StopsMap({
         style={StyleSheet.absoluteFill}
         initialRegion={region}
         showsUserLocation={showsUserLocation}
+        // The map defaults to "system setting", so it went dark on a phone in
+        // dark mode while the rest of the app stayed light. This is the map's
+        // own prop and is independent of the app-wide light lock — the map
+        // reads the system theme directly, not the Activity's night mode.
+        userInterfaceStyle="light"
       >
         {connected && stops.length > 1 && (
           <Polyline

@@ -6,7 +6,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorText } from '@/components/ErrorText';
 import { Spinner } from '@/components/Spinner';
-import { colors, fontSize, radii, spacing } from '@/lib/theme';
+import { colors, fontSize, spacing } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { useSupabaseQuery } from '@/lib/use-supabase-query';
 
@@ -62,15 +62,13 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      {isLoading && <Spinner style={styles.spinner} />}
+      {(isLoading || isRefreshing) && <Spinner style={styles.spinner} />}
       {error && <ErrorText style={styles.errorPadded}>Notifications failed to load: {error}</ErrorText>}
 
       <FlatList
         data={notifications ?? []}
         keyExtractor={(n) => n.id}
         contentContainerStyle={styles.list}
-        onRefresh={refetch}
-        refreshing={isRefreshing}
         renderItem={({ item: n }) => {
           const body = (
             <View style={[styles.row, !n.read_at && styles.rowUnread]}>
@@ -118,23 +116,25 @@ const styles = StyleSheet.create({
   errorPadded: {
     padding: spacing.lg,
   },
+  // No gap: rows carry their own divider and must meet.
   list: {
-    padding: spacing.lg,
-    gap: 10,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
+  // Unread keeps a tint but loses the border — the dot and the bolder text
+  // already carry the signal, and an outline would reinstate the boxes.
   rowUnread: {
-    borderColor: colors.unreadBorder,
     backgroundColor: colors.unreadSurface,
+    marginHorizontal: -spacing.lg,
+    paddingHorizontal: spacing.lg,
   },
   unreadDot: {
     width: 8,
