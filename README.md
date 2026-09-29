@@ -231,3 +231,4 @@ detail:
 
 - `supabase/functions/notify-trip-update/README.md` — fan-out function config & local testing.
 - `scripts/gtfs-import/README.md` — GTFS import details and limitations.
+Developed by: Azer Debbabi
